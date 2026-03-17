@@ -8,23 +8,74 @@ import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>;
 type IconSymbolName = keyof typeof MAPPING;
 
-/**
- * Add your SF Symbols to Material Icons mappings here.
- * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
- * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
- */
 const MAPPING = {
+  // Navigation
   "house.fill": "home",
+  "folder.fill": "folder",
+  "message.fill": "chat",
+  "play.rectangle.fill": "movie",
+  "person.fill": "person",
+  // Tools
+  "doc.text.fill": "description",
+  "camera.fill": "camera",
+  "film.fill": "theaters",
+  "wand.and.stars": "auto-fix-high",
+  "list.bullet.clipboard.fill": "assignment",
+  "dollarsign.circle.fill": "attach-money",
+  "captions.bubble.fill": "subtitles",
+  "checkmark.shield.fill": "verified-user",
+  "mic.fill": "mic",
+  "scissors": "content-cut",
+  "video.fill": "videocam",
+  "sparkles": "auto-awesome",
+  "chart.bar.fill": "bar-chart",
+  // Actions
+  "plus": "add",
+  "plus.circle.fill": "add-circle",
+  "pencil": "edit",
+  "trash.fill": "delete",
+  "square.and.arrow.up": "share",
+  "arrow.left": "arrow-back",
+  "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
+  "chevron.down": "expand-more",
+  "xmark": "close",
+  "xmark.circle.fill": "cancel",
+  "checkmark": "check",
+  "checkmark.circle.fill": "check-circle",
+  // UI
+  "gear": "settings",
+  "bell.fill": "notifications",
+  "magnifyingglass": "search",
+  "ellipsis": "more-horiz",
+  "ellipsis.circle": "more-vert",
+  "star.fill": "star",
+  "heart.fill": "favorite",
+  "link": "link",
+  "person.2.fill": "group",
+  "crown.fill": "workspace-premium",
+  "bolt.fill": "bolt",
+  "clock.fill": "access-time",
+  "calendar": "calendar-today",
+  "photo.fill": "photo",
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
-  "chevron.right": "chevron-right",
+  "arrow.clockwise": "refresh",
+  "info.circle.fill": "info",
+  "exclamationmark.triangle.fill": "warning",
+  "lock.fill": "lock",
+  "eye.fill": "visibility",
+  "eye.slash.fill": "visibility-off",
+  "creditcard.fill": "credit-card",
+  "gift.fill": "card-giftcard",
+  "person.badge.plus": "person-add",
+  "rectangle.on.rectangle": "copy-all",
+  "arrow.down.circle.fill": "download",
+  "play.fill": "play-arrow",
+  "pause.fill": "pause",
+  "stop.fill": "stop",
 } as IconMapping;
 
-/**
- * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
- * This ensures a consistent look across platforms, and optimal resource usage.
- * Icon `name`s are based on SF Symbols and require manual mapping to Material Icons.
- */
 export function IconSymbol({
   name,
   size = 24,

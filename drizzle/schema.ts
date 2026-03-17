@@ -1,28 +1,166 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  json,
+  decimal,
+} from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  credits: int("credits").default(100).notNull(),
+  subscriptionTier: mysqlEnum("subscriptionTier", ["free","amateur","independent","creator","studio","industry"]).default("free").notNull(),
+  referralCode: varchar("referralCode", { length: 16 }),
+  referredBy: int("referredBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const projects = mysqlTable("projects", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  genre: varchar("genre", { length: 100 }),
+  logline: text("logline"),
+  status: mysqlEnum("status", ["draft","in_progress","completed","archived"]).default("draft").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+
+export const scenes = mysqlTable("scenes", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  sceneNumber: int("sceneNumber").notNull(),
+  location: varchar("location", { length: 255 }),
+  timeOfDay: varchar("timeOfDay", { length: 50 }),
+  characters: json("characters"),
+  videoUrl: text("videoUrl"),
+  thumbnailUrl: text("thumbnailUrl"),
+  status: mysqlEnum("status", ["draft","generating","ready","failed"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Scene = typeof scenes.$inferSelect;
+export type InsertScene = typeof scenes.$inferInsert;
+
+export const characters = mysqlTable("characters", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 100 }),
+  description: text("description"),
+  portraitUrl: text("portraitUrl"),
+  traits: json("traits"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Character = typeof characters.$inferSelect;
+
+export const scripts = mysqlTable("scripts", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  content: text("content"),
+  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Script = typeof scripts.$inferSelect;
+
+export const storyboardPanels = mysqlTable("storyboard_panels", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  sceneId: int("sceneId"),
+  panelNumber: int("panelNumber").notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  cameraAngle: varchar("cameraAngle", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type StoryboardPanel = typeof storyboardPanels.$inferSelect;
+
+export const videos = mysqlTable("videos", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  projectId: int("projectId"),
+  sceneId: int("sceneId"),
+  prompt: text("prompt"),
+  videoUrl: text("videoUrl"),
+  thumbnailUrl: text("thumbnailUrl"),
+  duration: int("duration"),
+  status: mysqlEnum("status", ["generating","ready","failed"]).default("generating").notNull(),
+  type: mysqlEnum("type", ["clip","trailer","film"]).default("clip").notNull(),
+  creditsUsed: int("creditsUsed").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Video = typeof videos.$inferSelect;
+
+export const chatMessages = mysqlTable("chat_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  projectId: int("projectId"),
+  role: mysqlEnum("role", ["user","assistant"]).notNull(),
+  content: text("content").notNull(),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export const shotLists = mysqlTable("shot_lists", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  sceneId: int("sceneId"),
+  content: json("content"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const budgetEstimates = mysqlTable("budget_estimates", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  totalBudget: decimal("totalBudget", { precision: 12, scale: 2 }),
+  lineItems: json("lineItems"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const teamMembers = mysqlTable("team_members", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner","director","writer","editor","viewer"]).default("viewer").notNull(),
+  invitedAt: timestamp("invitedAt").defaultNow().notNull(),
+});
+
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerId: int("referrerId").notNull(),
+  referredId: int("referredId").notNull(),
+  creditsAwarded: int("creditsAwarded").default(50).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const creditTransactions = mysqlTable("credit_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amount: int("amount").notNull(),
+  type: mysqlEnum("type", ["earn","spend","refund","bonus"]).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
