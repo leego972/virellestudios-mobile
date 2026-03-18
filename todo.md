@@ -87,7 +87,7 @@
 - [x] Request notification permissions on app launch (iOS + Android)
 - [x] Register Expo push token with backend
 - [x] Handle incoming notifications (foreground + background)
-- [ ] Notification settings screen in Profile
+- [x] Notification settings screen in Profile
 
 ## Offline Draft Mode
 - [x] Cache scripts and storyboards locally with AsyncStorage
@@ -97,3 +97,7 @@
 
 ## Onboarding Induction Flow
 - [x] Mobile: Post-login onboarding screen (movie pipeline walkthrough, 6 steps, do-not-show-again)
+
+## Next Steps (Mar 2026)
+- [x] Notification settings screen in Profile
+- [x] Set RESEND_API_KEY secret

@@ -25,6 +25,7 @@ import PrivacyScreen from "@/components/tools/Privacy";
 import TermsScreen from "@/components/tools/Terms";
 import FilmPostProductionScreen from "@/components/tools/FilmPostProduction";
 import FundingDirectoryScreen from "@/components/tools/FundingDirectory";
+import NotificationSettingsScreen from "@/components/tools/NotificationSettings";
 
 const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "script-writer": ScriptWriterScreen,
@@ -48,6 +49,7 @@ const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "terms": TermsScreen,
   "film-post-production": FilmPostProductionScreen,
   "funding-directory": FundingDirectoryScreen,
+  "notifications": NotificationSettingsScreen,
 };
 
 export default function ToolScreen() {

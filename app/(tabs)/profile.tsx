@@ -156,6 +156,7 @@ export default function ProfileScreen() {
                 { label: "Subscription Plans", icon: "💳", route: "/tool/subscription" },
                 { label: "Referral Program", icon: "🎁", route: "/tool/referrals" },
                 { label: "Credit History", icon: "📊", route: "/tool/credits" },
+                { label: "Notification Settings", icon: "🔔", route: "/tool/notifications" },
                 { label: "Privacy Policy", icon: "🔒", route: "/tool/privacy" },
                 { label: "Terms of Service", icon: "📄", route: "/tool/terms" },
               ].map((item, index, arr) => (
