@@ -21,9 +21,11 @@ const PRODUCTION_TOOLS = [
   { id: "dialogue", label: "Dialogue Enhancer", icon: "💬", description: "Improve character dialogue" },
   { id: "budget", label: "Budget Estimator", icon: "💰", description: "Production cost breakdown" },
   { id: "continuity", label: "Continuity Checker", icon: "🔍", description: "Find script inconsistencies" },
-  { id: "subtitles", label: "Subtitle Generator", icon: "📺", description: "Auto-generate subtitles" },
+  { id: "subtitles", label: "Subtitles · 130+ Languages", icon: "📺", description: "Auto-generate subtitles" },
   { id: "scene-builder", label: "Scene Builder", icon: "🎬", description: "Build individual scenes" },
   { id: "characters", label: "Characters", icon: "👥", description: "Manage cast & characters" },
+  { id: "film-post-production", label: "Film Post-Production", icon: "🎚", description: "ADR · Foley · Score · Mix" },
+  { id: "funding-directory", label: "Funding Directory", icon: "🌍", description: "94 funders · Apply from app" },
   { id: "team", label: "Team", icon: "🤝", description: "Invite collaborators" },
 ];
 

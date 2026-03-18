@@ -1,5 +1,6 @@
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import * as schema from "../drizzle/schema";
 import {
   InsertUser,
   InsertProject,
@@ -60,7 +61,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
-    // Assign admin role for admin emails
     const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
     if (isAdmin || user.openId === ENV.ownerOpenId) {
       values.role = "admin";
@@ -71,12 +71,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     }
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-
-    // Generate referral code for new users
     if (!values.referralCode) {
       values.referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
     }
-
     await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
@@ -103,7 +100,6 @@ export async function updateUserCredits(userId: number, delta: number, descripti
   if (!db) return;
   const user = await getUserById(userId);
   if (!user) return;
-  // Admin users have unlimited credits
   if (user.role === "admin") return;
   const newCredits = Math.max(0, user.credits + delta);
   await db.update(users).set({ credits: newCredits }).where(eq(users.id, userId));
@@ -336,4 +332,131 @@ export async function processReferral(referrerId: number, referredId: number) {
   await db.insert(referrals).values({ referrerId, referredId, creditsAwarded: 50 });
   await updateUserCredits(referrerId, 50, "Referral bonus", "bonus");
   await updateUserCredits(referredId, 25, "Welcome referral bonus", "bonus");
+}
+
+// ─── Film Post-Production ─────────────────────────────────────────────────────
+
+export async function getMixSettings(projectId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(schema.filmMixSettings).where(eq(schema.filmMixSettings.projectId, projectId));
+  return rows[0] ?? null;
+}
+
+export async function saveMixSettings(projectId: number, data: Partial<typeof schema.filmMixSettings.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await getMixSettings(projectId);
+  if (existing) {
+    await db.update(schema.filmMixSettings).set(data).where(eq(schema.filmMixSettings.projectId, projectId));
+  } else {
+    await db.insert(schema.filmMixSettings).values({ projectId, ...data });
+  }
+}
+
+export async function getAdrTracks(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.filmAdrTracks).where(eq(schema.filmAdrTracks.projectId, projectId));
+}
+
+export async function createAdrTrack(data: typeof schema.filmAdrTracks.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(schema.filmAdrTracks).values(data);
+}
+
+export async function updateAdrTrack(id: number, data: Partial<typeof schema.filmAdrTracks.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.filmAdrTracks).set(data).where(eq(schema.filmAdrTracks.id, id));
+}
+
+export async function deleteAdrTrack(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(schema.filmAdrTracks).where(eq(schema.filmAdrTracks.id, id));
+}
+
+export async function getFoleyTracks(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.filmFoleyTracks).where(eq(schema.filmFoleyTracks.projectId, projectId));
+}
+
+export async function createFoleyTrack(data: typeof schema.filmFoleyTracks.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(schema.filmFoleyTracks).values(data);
+}
+
+export async function updateFoleyTrack(id: number, data: Partial<typeof schema.filmFoleyTracks.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.filmFoleyTracks).set(data).where(eq(schema.filmFoleyTracks.id, id));
+}
+
+export async function deleteFoleyTrack(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(schema.filmFoleyTracks).where(eq(schema.filmFoleyTracks.id, id));
+}
+
+export async function getScoreCues(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.filmScoreCues).where(eq(schema.filmScoreCues.projectId, projectId));
+}
+
+export async function createScoreCue(data: typeof schema.filmScoreCues.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(schema.filmScoreCues).values(data);
+}
+
+export async function updateScoreCue(id: number, data: Partial<typeof schema.filmScoreCues.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.filmScoreCues).set(data).where(eq(schema.filmScoreCues.id, id));
+}
+
+export async function deleteScoreCue(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(schema.filmScoreCues).where(eq(schema.filmScoreCues.id, id));
+}
+
+// ─── Funding Applications ─────────────────────────────────────────────────────
+
+export async function getFundingApplications(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.fundingApplications).where(eq(schema.fundingApplications.userId, userId)).orderBy(desc(schema.fundingApplications.createdAt));
+}
+
+export async function createFundingApplication(data: typeof schema.fundingApplications.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(schema.fundingApplications).values(data);
+  return result[0];
+}
+
+export async function updateFundingApplication(id: number, data: Partial<typeof schema.fundingApplications.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.fundingApplications).set(data).where(eq(schema.fundingApplications.id, id));
+}
+
+export async function deleteFundingApplication(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(schema.fundingApplications).where(eq(schema.fundingApplications.id, id));
+}
+
+// ─── Push Notifications ───────────────────────────────────────────────────────
+
+export async function updateUserPushToken(userId: number, pushToken: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ pushToken }).where(eq(users.id, userId));
 }

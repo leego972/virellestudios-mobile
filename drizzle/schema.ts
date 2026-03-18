@@ -23,6 +23,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  pushToken: varchar("pushToken", { length: 512 }),
 });
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -163,4 +164,70 @@ export const creditTransactions = mysqlTable("credit_transactions", {
   type: mysqlEnum("type", ["earn","spend","refund","bonus"]).notNull(),
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Film Post-Production ─────────────────────────────────────────────────────
+
+export const filmMixSettings = mysqlTable("film_mix_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  dialogueBus: decimal("dialogueBus", { precision: 4, scale: 3 }).default("0.850"),
+  musicBus: decimal("musicBus", { precision: 4, scale: 3 }).default("0.700"),
+  effectsBus: decimal("effectsBus", { precision: 4, scale: 3 }).default("0.750"),
+  masterVolume: decimal("masterVolume", { precision: 4, scale: 3 }).default("1.000"),
+  reverbRoom: mysqlEnum("reverbRoom", ["none","small","medium","large","hall","cathedral"]).default("none"),
+  reverbAmount: decimal("reverbAmount", { precision: 4, scale: 3 }).default("0.000"),
+  compressionRatio: decimal("compressionRatio", { precision: 5, scale: 2 }).default("1.00"),
+  noiseReduction: int("noiseReduction").default(0),
+  notes: text("notes"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+});
+
+export const filmAdrTracks = mysqlTable("film_adr_tracks", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  characterName: varchar("characterName", { length: 128 }).notNull(),
+  dialogueLine: text("dialogueLine"),
+  trackType: mysqlEnum("trackType", ["adr","wild_track","loop_group","walla"]).default("adr"),
+  status: mysqlEnum("status", ["pending","recorded","approved","rejected"]).default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const filmFoleyTracks = mysqlTable("film_foley_tracks", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  foleyType: mysqlEnum("foleyType", ["footsteps","cloth","props","impacts","environmental","custom"]).default("custom"),
+  description: text("description"),
+  status: mysqlEnum("status", ["pending","recorded","approved","rejected"]).default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const filmScoreCues = mysqlTable("film_score_cues", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  cueNumber: varchar("cueNumber", { length: 20 }).default("TBD"),
+  title: varchar("title", { length: 200 }).notNull(),
+  cueType: mysqlEnum("cueType", ["underscore","source_music","sting","theme","transition","silence"]).default("underscore"),
+  description: text("description"),
+  durationSeconds: int("durationSeconds").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Funding Applications ─────────────────────────────────────────────────────
+
+export const fundingApplications = mysqlTable("funding_applications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  projectId: int("projectId"),
+  fundingOrganization: varchar("fundingOrganization", { length: 200 }).notNull(),
+  projectTitle: varchar("projectTitle", { length: 300 }).notNull(),
+  status: mysqlEnum("status", ["draft","submitted","approved","rejected"]).default("draft"),
+  formData: json("formData"),
+  submittedAt: timestamp("submittedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 });

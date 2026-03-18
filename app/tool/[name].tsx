@@ -23,6 +23,8 @@ import AllToolsScreen from "@/components/tools/AllTools";
 import FilmGeneratorScreen from "@/components/tools/FilmGenerator";
 import PrivacyScreen from "@/components/tools/Privacy";
 import TermsScreen from "@/components/tools/Terms";
+import FilmPostProductionScreen from "@/components/tools/FilmPostProduction";
+import FundingDirectoryScreen from "@/components/tools/FundingDirectory";
 
 const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "script-writer": ScriptWriterScreen,
@@ -44,6 +46,8 @@ const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "film-generator": FilmGeneratorScreen,
   "privacy": PrivacyScreen,
   "terms": TermsScreen,
+  "film-post-production": FilmPostProductionScreen,
+  "funding-directory": FundingDirectoryScreen,
 };
 
 export default function ToolScreen() {

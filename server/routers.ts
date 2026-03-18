@@ -15,6 +15,12 @@ import {
   getBudgetEstimate, saveBudgetEstimate,
   getProjectTeam, addTeamMember,
   getReferralsByUser, getCreditHistory, updateUserCredits, getUserById,
+  getMixSettings, saveMixSettings,
+  getAdrTracks, createAdrTrack, updateAdrTrack, deleteAdrTrack,
+  getFoleyTracks, createFoleyTrack, updateFoleyTrack, deleteFoleyTrack,
+  getScoreCues, createScoreCue, updateScoreCue, deleteScoreCue,
+  getFundingApplications, createFundingApplication, updateFundingApplication, deleteFundingApplication,
+  updateUserPushToken,
 } from "./db.js";
 import { generateAIText } from "./ai.js";
 
@@ -26,6 +32,16 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return { success: true } as const;
+    }),
+    registerPushToken: protectedProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserPushToken(ctx.user.id, input.token);
+        return { success: true } as const;
+      }),
+    clearPushToken: protectedProcedure.mutation(async ({ ctx }) => {
+      await updateUserPushToken(ctx.user.id, null);
       return { success: true } as const;
     }),
   }),
@@ -217,6 +233,102 @@ export const appRouter = router({
       const credits = tierCredits[input.tier] ?? 100;
       await updateUserCredits(ctx.user.id, credits, `Upgraded to ${input.tier} plan`, "earn");
       return { success: true, tier: input.tier, credits };
+    }),
+  }),
+
+  filmPost: router({
+    getMixSettings: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getMixSettings(input.projectId)),
+    saveMixSettings: protectedProcedure.input(z.object({
+      projectId: z.number(),
+      dialogueBus: z.number().min(0).max(1).optional(),
+      musicBus: z.number().min(0).max(1).optional(),
+      effectsBus: z.number().min(0).max(1).optional(),
+      masterVolume: z.number().min(0).max(1).optional(),
+      reverbRoom: z.enum(["none","small","medium","large","hall","cathedral"]).optional(),
+      reverbAmount: z.number().min(0).max(1).optional(),
+      compressionRatio: z.number().min(1).max(20).optional(),
+      noiseReduction: z.boolean().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => { const { projectId, ...data } = input; await saveMixSettings(projectId, data as any); return { success: true }; }),
+    getAdrTracks: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getAdrTracks(input.projectId)),
+    createAdrTrack: protectedProcedure.input(z.object({ projectId: z.number(), characterName: z.string(), dialogueLine: z.string().optional(), trackType: z.enum(["adr","wild_track","loop_group","walla"]).optional(), notes: z.string().optional() })).mutation(async ({ input }) => { await createAdrTrack(input as any); return { success: true }; }),
+    updateAdrTrack: protectedProcedure.input(z.object({ id: z.number(), status: z.enum(["pending","recorded","approved","rejected"]).optional(), notes: z.string().optional(), dialogueLine: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateAdrTrack(id, data as any); return { success: true }; }),
+    deleteAdrTrack: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteAdrTrack(input.id); return { success: true }; }),
+    getFoleyTracks: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getFoleyTracks(input.projectId)),
+    createFoleyTrack: protectedProcedure.input(z.object({ projectId: z.number(), name: z.string(), foleyType: z.enum(["footsteps","cloth","props","impacts","environmental","custom"]).optional(), description: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => { await createFoleyTrack(input as any); return { success: true }; }),
+    updateFoleyTrack: protectedProcedure.input(z.object({ id: z.number(), status: z.enum(["pending","recorded","approved","rejected"]).optional(), notes: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateFoleyTrack(id, data as any); return { success: true }; }),
+    deleteFoleyTrack: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteFoleyTrack(input.id); return { success: true }; }),
+    getScoreCues: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getScoreCues(input.projectId)),
+    createScoreCue: protectedProcedure.input(z.object({ projectId: z.number(), title: z.string(), cueNumber: z.string().optional(), cueType: z.enum(["underscore","source_music","sting","theme","transition","silence"]).optional(), description: z.string().optional(), durationSeconds: z.number().optional(), notes: z.string().optional() })).mutation(async ({ input }) => { await createScoreCue(input as any); return { success: true }; }),
+    updateScoreCue: protectedProcedure.input(z.object({ id: z.number(), title: z.string().optional(), cueNumber: z.string().optional(), cueType: z.enum(["underscore","source_music","sting","theme","transition","silence"]).optional(), description: z.string().optional(), durationSeconds: z.number().optional(), notes: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateScoreCue(id, data as any); return { success: true }; }),
+    deleteScoreCue: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteScoreCue(input.id); return { success: true }; }),
+    generateAdrSuggestions: protectedProcedure.input(z.object({ projectId: z.number(), context: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits (5 required)");
+      const project = await getProjectById(input.projectId);
+      const projectScenes = await getProjectScenes(input.projectId);
+      const scenesSummary = projectScenes.slice(0, 8).map((s, i) => `Scene ${i+1}: ${s.title} — ${s.description?.slice(0,100) || ""}`).join("\n");
+      const prompt = `You are a professional ADR supervisor. Film: "${project?.title || "Untitled"}" Genre: ${project?.genre || "Drama"}\n\nScenes:\n${scenesSummary}\n\nIdentify 4-6 ADR needs. Return JSON: {"suggestions":[{"characterName":"...","dialogueLine":"...","trackType":"adr","notes":"..."}]}`;
+      const content = await generateAIText(prompt);
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "AI ADR suggestions", "spend");
+      try { const m = content.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : { suggestions: [] }; } catch { return { suggestions: [] }; }
+    }),
+    generateFoleySuggestions: protectedProcedure.input(z.object({ projectId: z.number(), context: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits (5 required)");
+      const project = await getProjectById(input.projectId);
+      const projectScenes = await getProjectScenes(input.projectId);
+      const scenesSummary = projectScenes.slice(0, 8).map((s, i) => `Scene ${i+1}: ${s.title} — ${s.description?.slice(0,100) || ""}`).join("\n");
+      const prompt = `You are a professional Foley supervisor. Film: "${project?.title || "Untitled"}" Genre: ${project?.genre || "Drama"}\n\nScenes:\n${scenesSummary}\n\nIdentify 5-8 Foley tracks. Return JSON: {"suggestions":[{"name":"...","foleyType":"footsteps","description":"...","notes":"..."}]}`;
+      const content = await generateAIText(prompt);
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "AI Foley suggestions", "spend");
+      try { const m = content.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : { suggestions: [] }; } catch { return { suggestions: [] }; }
+    }),
+    generateScoreCues: protectedProcedure.input(z.object({ projectId: z.number(), style: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 8) throw new Error("Insufficient credits (8 required)");
+      const project = await getProjectById(input.projectId);
+      const projectScenes = await getProjectScenes(input.projectId);
+      const scenesSummary = projectScenes.slice(0, 10).map((s, i) => `Scene ${i+1}: ${s.title} — ${s.description?.slice(0,100) || ""}`).join("\n");
+      const prompt = `You are a professional film composer. Film: "${project?.title || "Untitled"}" Genre: ${project?.genre || "Drama"}${input.style ? ` Style: ${input.style}` : ""}\n\nScenes:\n${scenesSummary}\n\nCreate 5-8 score cues. Return JSON: {"cues":[{"cueNumber":"1M1","title":"...","cueType":"underscore","description":"...","duration":60,"notes":"..."}]}`;
+      const content = await generateAIText(prompt);
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -8, "AI Score cues", "spend");
+      try { const m = content.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : { cues: [] }; } catch { return { cues: [] }; }
+    }),
+    exportMixSummary: protectedProcedure.input(z.object({ projectId: z.number() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 2) throw new Error("Insufficient credits (2 required)");
+      const project = await getProjectById(input.projectId);
+      const mixSettings = await getMixSettings(input.projectId);
+      const adrList = await getAdrTracks(input.projectId);
+      const foleyList = await getFoleyTracks(input.projectId);
+      const cueList = await getScoreCues(input.projectId);
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -2, "Mix summary export", "spend");
+      return {
+        projectTitle: project?.title || "Untitled",
+        exportedAt: new Date().toISOString(),
+        mix: mixSettings,
+        adr: { total: adrList.length, tracks: adrList },
+        foley: { total: foleyList.length, tracks: foleyList },
+        score: { total: cueList.length, cues: cueList },
+      };
+    }),
+  }),
+
+  funding: router({
+    list: protectedProcedure.query(async ({ ctx }) => getFundingApplications(ctx.user.id)),
+    create: protectedProcedure.input(z.object({ projectId: z.number().optional(), fundingOrganization: z.string(), projectTitle: z.string(), formData: z.any().optional() })).mutation(async ({ ctx, input }) => {
+      await createFundingApplication({ ...input, userId: ctx.user.id });
+      return { success: true };
+    }),
+    update: protectedProcedure.input(z.object({ id: z.number(), status: z.enum(["draft","submitted","approved","rejected"]).optional(), formData: z.any().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateFundingApplication(id, data as any); return { success: true }; }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteFundingApplication(input.id); return { success: true }; }),
+    submit: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 10) throw new Error("Insufficient credits (10 required)");
+      await updateFundingApplication(input.id, { status: "submitted", submittedAt: new Date() });
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -10, "Funding application submit", "spend");
+      return { success: true };
     }),
   }),
 });

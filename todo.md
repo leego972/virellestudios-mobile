@@ -66,3 +66,34 @@
 
 ## TypeScript
 - [x] Zero TypeScript errors across all files
+
+## Film Post-Production Screen (Mobile)
+- [x] Post-Production screen with ADR, Foley, Score, Mix, SFX tabs
+- [x] ADR tab: record dialogue takes, playback, sync to scene
+- [x] Foley tab: browse SFX library, layer sounds onto scene
+- [x] Score tab: AI music generation prompt → generate cue
+- [x] Mix tab: per-track volume sliders, master export
+- [x] Link from Project Detail tools grid
+
+## Funding Directory (Mobile)
+- [x] Funding Directory screen with search and country/type filters
+- [x] Funding source cards (organization, country, type, amount)
+- [x] Application form flow (draft creation → complete in web app)
+- [x] Professional working-pack disclaimer banner
+- [x] Link to funder's official site
+- [x] Link from Project Detail tools grid
+
+## Push Notifications
+- [x] Request notification permissions on app launch (iOS + Android)
+- [x] Register Expo push token with backend
+- [x] Handle incoming notifications (foreground + background)
+- [ ] Notification settings screen in Profile
+
+## Offline Draft Mode
+- [ ] Cache scripts and storyboards locally with AsyncStorage
+- [ ] Show offline indicator when no network connection
+- [ ] Sync local drafts to server when connection restored
+- [ ] Conflict resolution (server wins on sync)
+
+## Onboarding Induction Flow
+- [ ] Mobile: Post-login onboarding screen (movie pipeline walkthrough, 6 steps, do-not-show-again)
