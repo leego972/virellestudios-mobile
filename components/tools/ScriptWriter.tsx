@@ -8,11 +8,12 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import { useOfflineDraft } from "@/hooks/use-offline-draft";
 
 const GENRES = ["Drama", "Thriller", "Comedy", "Horror", "Sci-Fi", "Romance", "Action", "Documentary"];
 const TONES = ["Dramatic", "Dark", "Comedic", "Inspirational", "Suspenseful", "Romantic", "Epic"];
@@ -25,6 +26,9 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
   const [tone, setTone] = useState("Dramatic");
   const [script, setScript] = useState("");
   const [editing, setEditing] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  const { isOnline, saveDraft, loadDraft, markSynced } = useOfflineDraft();
 
   const { data: existingScript } = trpc.script.get.useQuery(
     { projectId: projectId! },
@@ -32,14 +36,57 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
   );
 
   const generateMutation = trpc.script.generate.useMutation({
-    onSuccess: (data) => { setScript(data.content); setEditing(true); },
+    onSuccess: (data) => {
+      setScript(data.content);
+      setEditing(true);
+      // Save to offline cache immediately
+      if (projectId) saveDraft(projectId, "script", data.content);
+    },
     onError: (err) => Alert.alert("Error", err.message),
   });
 
   const saveMutation = trpc.script.save.useMutation({
-    onSuccess: () => Alert.alert("Saved", "Script saved successfully!"),
+    onSuccess: () => {
+      Alert.alert("Saved", "Script saved successfully!");
+      if (projectId) markSynced(projectId, "script");
+    },
     onError: (err) => Alert.alert("Error", err.message),
   });
+
+  // Load offline draft on mount if no server data yet
+  useEffect(() => {
+    if (!projectId || draftRestored) return;
+    loadDraft(projectId, "script").then((draft) => {
+      if (draft && !existingScript?.content) {
+        setScript(draft.content as string);
+        setEditing(true);
+        setDraftRestored(true);
+        Alert.alert(
+          "Draft Restored",
+          `An offline draft from ${new Date(draft.savedAt).toLocaleString()} was restored.`,
+          [{ text: "OK" }]
+        );
+      }
+    });
+  }, [projectId, existingScript]);
+
+  // Auto-save draft whenever script content changes
+  const handleScriptChange = useCallback((text: string) => {
+    setScript(text);
+    if (projectId) saveDraft(projectId, "script", text);
+  }, [projectId]);
+
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (!isOnline || !projectId) return;
+    const currentContent = script || existingScript?.content;
+    if (!currentContent) return;
+    loadDraft(projectId, "script").then((draft) => {
+      if (draft && !draft.synced) {
+        saveMutation.mutate({ projectId, content: draft.content as string });
+      }
+    });
+  }, [isOnline]);
 
   const handleGenerate = () => {
     if (!premise.trim()) {
@@ -65,14 +112,21 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
         {displayScript ? (
           <TouchableOpacity
             onPress={() => projectId && saveMutation.mutate({ projectId, content: displayScript })}
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || !isOnline}
           >
-            <Text style={[styles.saveText, { color: colors.primary }]}>
-              {saveMutation.isPending ? "Saving..." : "Save"}
+            <Text style={[styles.saveText, { color: isOnline ? colors.primary : colors.muted }]}>
+              {saveMutation.isPending ? "Saving..." : isOnline ? "Save" : "Offline"}
             </Text>
           </TouchableOpacity>
         ) : <View style={{ width: 48 }} />}
       </View>
+
+      {/* Offline indicator */}
+      {!isOnline && (
+        <View style={[styles.offlineBanner, { backgroundColor: "#7c3a00" }]}>
+          <Text style={styles.offlineText}>⚡ Offline — changes saved locally and will sync when reconnected</Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
         {/* Premise Input */}
@@ -134,9 +188,9 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
 
         {/* Generate Button */}
         <TouchableOpacity
-          style={[styles.generateButton, { backgroundColor: colors.primary }, generateMutation.isPending && { opacity: 0.7 }]}
+          style={[styles.generateButton, { backgroundColor: colors.primary }, (generateMutation.isPending || !isOnline) && { opacity: 0.7 }]}
           onPress={handleGenerate}
-          disabled={generateMutation.isPending}
+          disabled={generateMutation.isPending || !isOnline}
         >
           {generateMutation.isPending ? (
             <View style={styles.loadingRow}>
@@ -145,7 +199,7 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
             </View>
           ) : (
             <Text style={styles.generateText}>
-              {displayScript ? "Regenerate Script" : "Generate Script"}
+              {!isOnline ? "Offline — Connect to Generate" : displayScript ? "Regenerate Script" : "Generate Script"}
             </Text>
           )}
         </TouchableOpacity>
@@ -154,7 +208,9 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
         {displayScript ? (
           <View style={styles.scriptContainer}>
             <View style={styles.scriptHeader}>
-              <Text style={[styles.scriptTitle, { color: colors.foreground }]}>Generated Script</Text>
+              <Text style={[styles.scriptTitle, { color: colors.foreground }]}>
+                Generated Script {!isOnline ? "(Draft)" : ""}
+              </Text>
               <TouchableOpacity onPress={() => setEditing(!editing)}>
                 <Text style={[styles.editToggle, { color: colors.primary }]}>
                   {editing ? "View" : "Edit"}
@@ -165,7 +221,7 @@ export default function ScriptWriterScreen({ projectId }: { projectId?: number }
               <TextInput
                 style={[styles.scriptEditor, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground }]}
                 value={displayScript}
-                onChangeText={setScript}
+                onChangeText={handleScriptChange}
                 multiline
                 textAlignVertical="top"
               />
@@ -186,6 +242,8 @@ const styles = StyleSheet.create({
   back: { fontSize: 16 },
   headerTitle: { fontSize: 17, fontWeight: "600" },
   saveText: { fontSize: 16, fontWeight: "600" },
+  offlineBanner: { paddingHorizontal: 16, paddingVertical: 8 },
+  offlineText: { color: "#fbbf24", fontSize: 12, textAlign: "center" },
   fieldGroup: { gap: 8 },
   fieldLabel: { fontSize: 13, fontWeight: "500" },
   textarea: { borderRadius: 12, borderWidth: 1, padding: 14, fontSize: 15, minHeight: 100, textAlignVertical: "top" },

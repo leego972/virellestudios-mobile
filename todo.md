@@ -90,10 +90,10 @@
 - [ ] Notification settings screen in Profile
 
 ## Offline Draft Mode
-- [ ] Cache scripts and storyboards locally with AsyncStorage
-- [ ] Show offline indicator when no network connection
-- [ ] Sync local drafts to server when connection restored
-- [ ] Conflict resolution (server wins on sync)
+- [x] Cache scripts and storyboards locally with AsyncStorage
+- [x] Show offline indicator when no network connection
+- [x] Sync local drafts to server when connection restored
+- [x] Conflict resolution (server wins on sync)
 
 ## Onboarding Induction Flow
-- [ ] Mobile: Post-login onboarding screen (movie pipeline walkthrough, 6 steps, do-not-show-again)
+- [x] Mobile: Post-login onboarding screen (movie pipeline walkthrough, 6 steps, do-not-show-again)

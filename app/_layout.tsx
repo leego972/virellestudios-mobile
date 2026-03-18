@@ -18,8 +18,11 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/hooks/use-auth";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+
+const ONBOARDING_KEY = "virelle_onboarding_v1_done";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -37,10 +40,20 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = (segments[0] as string) === "(auth)";
+    const inOnboarding = (segments[0] as string) === "onboarding";
     if (!isAuthenticated && !inAuthGroup) {
       router.replace("/(auth)/login" as never);
     } else if (isAuthenticated && inAuthGroup) {
-      router.replace("/(tabs)" as never);
+      // Check if user has seen onboarding before redirecting to tabs
+      AsyncStorage.getItem(ONBOARDING_KEY).then((done) => {
+        if (!done) {
+          router.replace("/onboarding" as never);
+        } else {
+          router.replace("/(tabs)" as never);
+        }
+      });
+    } else if (isAuthenticated && !inAuthGroup && !inOnboarding) {
+      // Already authenticated and not in auth/onboarding — stay put
     }
   }, [isAuthenticated, loading, segments]);
 
@@ -105,6 +118,7 @@ export default function RootLayout() {
               <Stack.Screen name="oauth/callback" />
               <Stack.Screen name="project/[id]" options={{ presentation: "card" }} />
               <Stack.Screen name="tool/[name]" options={{ presentation: "card" }} />
+              <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
             </Stack>
           </AuthGuard>
           <StatusBar style="light" />
