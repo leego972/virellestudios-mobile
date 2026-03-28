@@ -20,7 +20,7 @@ export interface FeatureEntry {
   category: string;
   webPath: string;
   description: string;
-  minTier: "free" | "amateur" | "independent" | "creator" | "studio" | "industry";
+  minTier: "free" | "indie" | "amateur" | "independent" | "creator" | "studio" | "industry";
   hasNative: boolean;
   isNew?: boolean;
   isAdmin?: boolean;

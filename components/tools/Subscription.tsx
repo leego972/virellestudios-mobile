@@ -166,8 +166,6 @@ export default function SubscriptionScreen({ projectId }: { projectId?: number }
       checkoutMutation.mutate({
         tier: tier.id as any,
         billing,
-        successUrl: "https://virellestudios.com/?subscription=success",
-        cancelUrl: "https://virellestudios.com/pricing",
       });
     }
   };

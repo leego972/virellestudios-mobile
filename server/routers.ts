@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COOKIE_NAME } from "../shared/const.js";
+import { TIER_MONTHLY_CREDITS } from "../shared/_core/subscription-constants.js";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
@@ -202,7 +203,9 @@ export const appRouter = router({
     history: protectedProcedure.query(async ({ ctx }) => getCreditHistory(ctx.user.id)),
     balance: protectedProcedure.query(async ({ ctx }) => {
       const user = await getUserById(ctx.user.id);
-      return { credits: user?.role === "admin" ? -1 : (user?.credits || 0), isUnlimited: user?.role === "admin", tier: user?.subscriptionTier || "free" };
+      const tier = user?.subscriptionTier || "free";
+      const totalCredits = user?.role === "admin" ? -1 : (TIER_MONTHLY_CREDITS[tier] ?? 0);
+      return { credits: user?.role === "admin" ? -1 : (user?.credits || 0), totalCredits, isUnlimited: user?.role === "admin", tier };
     }),
   }),
 
@@ -229,11 +232,19 @@ export const appRouter = router({
 
   subscription: router({
     upgrade: protectedProcedure.input(z.object({ tier: z.string() })).mutation(async ({ ctx, input }) => {
-      const tierCredits: Record<string, number> = { free: 100, amateur: 5000, independent: 25000, creator: 75000, studio: 250000, industry: 1000000 };
-      const credits = tierCredits[input.tier] ?? 100;
+      // TIER_MONTHLY_CREDITS is auto-generated — run `pnpm sync-mobile` in virellestudios to update
+      const credits = TIER_MONTHLY_CREDITS[input.tier] ?? 100;
       await updateUserCredits(ctx.user.id, credits, `Upgraded to ${input.tier} plan`, "earn");
       return { success: true, tier: input.tier, credits };
     }),
+    createCheckout: protectedProcedure
+      .input(z.object({ tier: z.string(), billing: z.enum(["monthly", "annual"]).default("annual") }))
+      .mutation(async ({ input }) => {
+        // Redirect to the web Stripe checkout page — mobile handles this via deep link
+        const baseUrl = process.env.APP_URL ?? "https://virellestudios.com";
+        const url = `${baseUrl}/pricing?tier=${input.tier}&billing=${input.billing}&source=mobile`;
+        return { url };
+      }),
   }),
 
   filmPost: router({
