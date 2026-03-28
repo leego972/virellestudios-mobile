@@ -12,15 +12,40 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import {
+  TIER_DISPLAY_NAMES,
+  TIER_MONTHLY_CREDITS,
+  TIER_PRICING,
+} from "@/shared/_core/subscription-constants";
 
-const SUBSCRIPTION_TIERS = [
-  { id: "free", name: "Free", price: "$0", credits: "100 credits", color: "#6B7280" },
-  { id: "amateur", name: "Amateur", price: "$500/mo", credits: "5,000 credits", color: "#8B5CF6" },
-  { id: "independent", name: "Independent", price: "$1,500/mo", credits: "25,000 credits", color: "#3B82F6" },
-  { id: "creator", name: "Creator", price: "$3,000/mo", credits: "75,000 credits", color: "#10B981" },
-  { id: "studio", name: "Studio", price: "$15,000/mo", credits: "250,000 credits", color: "#F59E0B" },
-  { id: "industry", name: "Industry", price: "$50,000/mo", credits: "1,000,000 credits", color: "#EF4444" },
-];
+// Tier colour map — visual only, not in shared constants
+const TIER_COLORS: Record<string, string> = {
+  free:        "#6B7280",
+  indie:       "#F59E0B",
+  amateur:     "#8B5CF6",
+  independent: "#3B82F6",
+  creator:     "#10B981",
+  studio:      "#F59E0B",
+  industry:    "#EF4444",
+  beta:        "#EC4899",
+};
+
+function formatAUD(cents: number): string {
+  return `A$${(cents / 100).toLocaleString("en-AU", { minimumFractionDigits: 0 })}`;
+}
+
+function getTierPrice(tierId: string): string {
+  if (tierId === "free") return "Free";
+  const pricing = (TIER_PRICING as Record<string, { monthly: number }>)[tierId];
+  if (!pricing) return "Custom";
+  return `${formatAUD(pricing.monthly)}/mo`;
+}
+
+function getTierCredits(tierId: string): string {
+  const credits = TIER_MONTHLY_CREDITS[tierId] ?? 0;
+  if (credits === 0) return "100 credits";
+  return `${credits.toLocaleString()} credits/mo`;
+}
 
 export default function ProfileScreen() {
   const colors = useColors();
@@ -30,16 +55,18 @@ export default function ProfileScreen() {
   const { data: referralData } = trpc.referrals.getCode.useQuery();
   const { data: creditHistory } = trpc.credits.history.useQuery();
 
-  const currentTier = SUBSCRIPTION_TIERS.find((t) => t.id === creditsData?.tier) ?? SUBSCRIPTION_TIERS[0];
+  const currentTierId = creditsData?.tier ?? "free";
+  const currentTierName = TIER_DISPLAY_NAMES[currentTierId] ?? "Free";
+  const currentTierColor = TIER_COLORS[currentTierId] ?? "#6B7280";
 
   const handleShareReferral = async () => {
     if (!referralData?.code) return;
     try {
       await Share.share({
-        message: `Join Virelle Studios — the AI-powered film production platform! Use my referral code ${referralData.code} to get 25 bonus credits when you sign up. https://virellestudios.com`,
+        message: `Join Virelle Studios — the AI-powered film production platform! Use my referral code ${referralData.code} to get 7,000 bonus credits when you sign up. https://virellestudios.com`,
         title: "Join Virelle Studios",
       });
-    } catch (e) {
+    } catch (_e) {
       // User cancelled
     }
   };
@@ -81,11 +108,11 @@ export default function ProfileScreen() {
           {/* Subscription */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Subscription</Text>
-            <View style={[styles.subscriptionCard, { backgroundColor: colors.surface, borderColor: currentTier.color }]}>
+            <View style={[styles.subscriptionCard, { backgroundColor: colors.surface, borderColor: currentTierColor }]}>
               <View style={styles.subscriptionHeader}>
                 <View>
-                  <Text style={[styles.tierName, { color: currentTier.color }]}>{currentTier.name}</Text>
-                  <Text style={[styles.tierPrice, { color: colors.foreground }]}>{currentTier.price}</Text>
+                  <Text style={[styles.tierName, { color: currentTierColor }]}>{currentTierName}</Text>
+                  <Text style={[styles.tierPrice, { color: colors.foreground }]}>{getTierPrice(currentTierId)}</Text>
                 </View>
                 <View style={styles.creditsDisplay}>
                   <Text style={[styles.creditsValue, { color: colors.primary }]}>
@@ -99,7 +126,7 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/tool/subscription" as never)}
               >
                 <Text style={styles.upgradeText}>
-                  {creditsData?.tier === "industry" ? "Manage Plan" : "Upgrade Plan"}
+                  {currentTierId === "industry" ? "Manage Plan" : "Upgrade Plan"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -111,7 +138,7 @@ export default function ProfileScreen() {
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Referral Program</Text>
               <View style={[styles.referralCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.referralDesc, { color: colors.muted }]}>
-                  Share your code and earn 50 credits for each friend who joins. They get 25 credits too!
+                  Share your code and earn 7,000 credits for each friend who joins. They get 7,000 credits too!
                 </Text>
                 <View style={[styles.codeBox, { backgroundColor: colors.surface2, borderColor: colors.border }]}>
                   <Text style={[styles.codeText, { color: colors.foreground }]}>{referralData.code}</Text>
@@ -131,7 +158,7 @@ export default function ProfileScreen() {
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Credit History</Text>
               <View style={[styles.historyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                {creditHistory.slice(0, 5).map((tx) => (
+                {creditHistory.slice(0, 5).map((tx: any) => (
                   <View key={tx.id} style={[styles.historyRow, { borderBottomColor: colors.border }]}>
                     <View style={styles.historyInfo}>
                       <Text style={[styles.historyDesc, { color: colors.foreground }]}>{tx.description}</Text>
