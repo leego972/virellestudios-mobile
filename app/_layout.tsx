@@ -1,3 +1,7 @@
+import * as Sentry from "@sentry/react-native";
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.EXPO_PUBLIC_SENTRY_DSN, environment: __DEV__ ? "development" : "production", tracesSampleRate: __DEV__ ? 1.0 : 0.1 });
+}
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
