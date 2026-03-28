@@ -29,9 +29,10 @@ export default function BillingCallback() {
     const subscription = params.subscription || params.status;
 
     if (subscription === "success") {
-      // Invalidate subscription status so it re-fetches the new tier
-      utils.subscription.status.invalidate().catch(() => {});
+      // Invalidate credits balance so the home screen refreshes with the new tier
       utils.credits.balance.invalidate().catch(() => {});
+      // Also invalidate the auth.me query so the home screen picks up the new tier
+      utils.auth.me.invalidate().catch(() => {});
       setStatus("success");
       setTimeout(() => {
         router.replace("/(tabs)" as never);
