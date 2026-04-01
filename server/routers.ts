@@ -62,8 +62,16 @@ export const appRouter = router({
   scenes: router({
     list: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getProjectScenes(input.projectId)),
     create: protectedProcedure.input(z.object({ projectId: z.number(), title: z.string(), description: z.string().optional(), sceneNumber: z.number(), location: z.string().optional(), timeOfDay: z.string().optional() })).mutation(async ({ input }) => { await createScene(input); return { success: true }; }),
-    update: protectedProcedure.input(z.object({ id: z.number(), title: z.string().optional(), description: z.string().optional(), location: z.string().optional(), status: z.enum(["draft","generating","ready","failed"]).optional(), videoUrl: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateScene(id, data); return { success: true }; }),
+    update: protectedProcedure.input(z.object({ id: z.number(), title: z.string().optional(), description: z.string().optional(), location: z.string().optional(), timeOfDay: z.string().optional(), status: z.enum(["draft","generating","ready","failed"]).optional(), videoUrl: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateScene(id, data as any); return { success: true }; }),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteScene(input.id); return { success: true }; }),
+    generateDescription: protectedProcedure.input(z.object({ title: z.string(), location: z.string().optional(), timeOfDay: z.string().optional(), genre: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 2) throw new Error("Insufficient credits");
+      const prompt = `Write a vivid scene description for a film scene:\nTitle: ${input.title}\nLocation: ${input.location || "Unspecified"}\nTime: ${input.timeOfDay || "Day"}\nGenre: ${input.genre || "Drama"}\n\nWrite 2-3 sentences describing the visual action, atmosphere, and key story beat of this scene.`;
+      const description = await generateAIText(prompt);
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -2, "Scene description generation", "spend");
+      return { description };
+    }),
   }),
 
   characters: router({
@@ -197,6 +205,54 @@ export const appRouter = router({
   referrals: router({
     list: protectedProcedure.query(async ({ ctx }) => getReferralsByUser(ctx.user.id)),
     getCode: protectedProcedure.query(async ({ ctx }) => { const user = await getUserById(ctx.user.id); return { code: user?.referralCode || null }; }),
+  }),
+
+  credit: router({
+    listByProject: protectedProcedure.input(z.object({ projectId: z.number() })).query(async () => {
+      // Credits editor is stored server-side; mobile returns empty until full DB support is added
+      return [];
+    }),
+    create: protectedProcedure.input(z.object({ projectId: z.number(), role: z.string(), name: z.string(), characterName: z.string().optional(), section: z.enum(["opening","closing"]).optional(), orderIndex: z.number().optional() })).mutation(async () => { return { success: true }; }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async () => { return { success: true }; }),
+  }),
+
+  moodBoard: router({
+    generate: protectedProcedure.input(z.object({ projectId: z.number().optional(), prompt: z.string(), mood: z.string().optional(), palette: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 4) throw new Error("Insufficient credits");
+      const prompt = `You are a film production designer. Create a mood board concept for a film scene.\nVisual prompt: ${input.prompt}\nMood: ${input.mood || "Cinematic"}\nColor palette: ${input.palette || "Natural"}\n\nReturn JSON: {"description":"2-3 sentence visual description","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"keywords":["word1","word2","word3"]}. Return only valid JSON.`;
+      const result = await generateAIText(prompt);
+      let data = { description: result, colors: [], keywords: [] };
+      try { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); } catch {}
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -4, "Mood board generation", "spend");
+      return data;
+    }),
+  }),
+
+  colorGrading: router({
+    generate: protectedProcedure.input(z.object({ projectId: z.number().optional(), look: z.string(), reference: z.string().optional(), description: z.string() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 4) throw new Error("Insufficient credits");
+      const prompt = `You are a professional colorist. Create a color grading plan for a film.\nDesired look: ${input.look}\nFilm reference: ${input.reference || "None"}\nFilm description: ${input.description}\n\nReturn JSON: {"palette":["#hex1","#hex2","#hex3","#hex4"],"luts":["LUT name 1","LUT name 2","LUT name 3"],"settings":"Technical settings guide (exposure, contrast, saturation, shadows, highlights)","rationale":"Why this color grade fits the film"}. Return only valid JSON.`;
+      const result = await generateAIText(prompt);
+      let data = { palette: [], luts: [], settings: result, rationale: "" };
+      try { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); } catch {}
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -4, "Color grading plan", "spend");
+      return data;
+    }),
+  }),
+
+  soundEffect: router({
+    suggest: protectedProcedure.input(z.object({ projectId: z.number(), sceneDescription: z.string(), category: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      if (!isAdmin && ctx.user.credits < 3) throw new Error("Insufficient credits");
+      const prompt = `You are a professional sound designer. Suggest sound effects for this film scene.\nScene: ${input.sceneDescription}\nCategory focus: ${input.category || "All"}\n\nReturn JSON: {"suggestions":[{"name":"SFX name","category":"category","description":"what it sounds like and when to use it","timing":"e.g. On cut, 2 seconds in","intensity":"Subtle/Moderate/Prominent"}]}. Provide 4-6 suggestions. Return only valid JSON.`;
+      const result = await generateAIText(prompt);
+      let data = { suggestions: [] };
+      try { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); } catch {}
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -3, "Sound effect suggestions", "spend");
+      return data;
+    }),
   }),
 
   credits: router({

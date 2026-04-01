@@ -26,6 +26,11 @@ import TermsScreen from "@/components/tools/Terms";
 import FilmPostProductionScreen from "@/components/tools/FilmPostProduction";
 import FundingDirectoryScreen from "@/components/tools/FundingDirectory";
 import NotificationSettingsScreen from "@/components/tools/NotificationSettings";
+import MoodBoardScreen from "@/components/tools/MoodBoard";
+import ColorGradingScreen from "@/components/tools/ColorGrading";
+import SoundEffectsScreen from "@/components/tools/SoundEffects";
+import CreditsEditorScreen from "@/components/tools/CreditsEditor";
+import SceneEditorScreen from "@/components/tools/SceneEditor";
 
 const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "script-writer": ScriptWriterScreen,
@@ -50,6 +55,11 @@ const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "film-post-production": FilmPostProductionScreen,
   "funding-directory": FundingDirectoryScreen,
   "notifications": NotificationSettingsScreen,
+  "mood-board": MoodBoardScreen,
+  "color-grading": ColorGradingScreen,
+  "sound-effects": SoundEffectsScreen,
+  "credits-editor": CreditsEditorScreen,
+  "scene-editor": SceneEditorScreen,
 };
 
 export default function ToolScreen() {
