@@ -1,25 +1,72 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal } from "react-native";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { useCredits } from "@/hooks/use-credits";
+import { CreditBadge } from "@/components/credit-badge";
 import { trpc } from "@/lib/trpc";
+import CinemaPlayer from "@/components/cinema-player";
+
+const TRAILER_COST = 50;
 
 export default function TrailerScreen({ projectId }: { projectId?: number }) {
   const colors = useColors();
   const router = useRouter();
+  const { canAfford, refetch: refetchCredits } = useCredits();
   const [style, setStyle] = useState("Dramatic");
+  const [generatedVideoId, setGeneratedVideoId] = useState<number | null>(null);
+  const [playerVideo, setPlayerVideo] = useState<{ videoUrl: string } | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const STYLES = ["Dramatic", "Action", "Horror", "Comedy", "Romance", "Epic", "Mystery"];
+
   const generateMutation = trpc.trailer.generate.useMutation({
-    onSuccess: () => Alert.alert("Success", "Trailer generation started! Check the Movies tab."),
+    onSuccess: (data) => {
+      refetchCredits();
+      setGeneratedVideoId(data.videoId as unknown as number);
+    },
     onError: (err) => Alert.alert("Error", err.message),
   });
+
+  const { data: projectVideos, refetch: refetchVideos } = trpc.videos.projectVideos.useQuery(
+    { projectId: projectId! },
+    { enabled: !!projectId && !!generatedVideoId }
+  );
+
+  useEffect(() => {
+    if (!generatedVideoId) return;
+    pollRef.current = setInterval(() => { refetchVideos(); }, 5000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [generatedVideoId]);
+
+  useEffect(() => {
+    if (!generatedVideoId || !projectVideos) return;
+    const vid = (projectVideos as any[]).find((v) => v.id === generatedVideoId);
+    if (vid?.status === "ready" && vid.videoUrl) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setPlayerVideo({ videoUrl: vid.videoUrl });
+    } else if (vid?.status === "failed") {
+      if (pollRef.current) clearInterval(pollRef.current);
+      Alert.alert("Generation Failed", "The trailer could not be generated. Please try again.");
+      setGeneratedVideoId(null);
+    }
+  }, [projectVideos, generatedVideoId]);
+
+  const isPolling = !!generatedVideoId && !playerVideo;
+
+  const handleGenerate = () => {
+    if (!projectId) { Alert.alert("Required", "Select a project first."); return; }
+    if (!canAfford(TRAILER_COST, "Trailer Generator")) return;
+    setPlayerVideo(null);
+    setGeneratedVideoId(null);
+    generateMutation.mutate({ projectId, style });
+  };
   return (
     <ScreenContainer containerClassName="bg-background">
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}><Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text></TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground }]}>Trailer Generator</Text>
-        <View style={{ width: 48 }} />
+        <CreditBadge cost={TRAILER_COST} />
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
         <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -38,12 +85,46 @@ export default function TrailerScreen({ projectId }: { projectId?: number }) {
           </View>
         </View>
         <View style={[styles.costBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.costText, { color: colors.muted }]}>💳 Cost: 50 credits</Text>
+          <Text style={[styles.costText, { color: colors.muted }]}>💳 Cost: <Text style={{ color: colors.primary, fontWeight: "700" }}>50 credits</Text> · 90-second cinematic trailer</Text>
         </View>
-        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }, (!projectId || generateMutation.isPending) && { opacity: 0.7 }]} onPress={() => { if (!projectId) { Alert.alert("Required", "Select a project first."); return; } generateMutation.mutate({ projectId, style }); }} disabled={!projectId || generateMutation.isPending}>
-          {generateMutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Generate Trailer</Text>}
+
+        {isPolling && (
+          <View style={[styles.pollingCard, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={[styles.pollingText, { color: colors.foreground }]}>Generating your trailer… checking every 5s</Text>
+          </View>
+        )}
+
+        {playerVideo && (
+          <TouchableOpacity style={[styles.resultCard, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={() => setPlayerVideo(playerVideo)}>
+            <Text style={styles.resultIcon}>🎞️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.resultTitle, { color: colors.foreground }]}>Trailer Ready!</Text>
+              <Text style={[styles.resultMeta, { color: colors.muted }]}>{style} style · Tap to play in CinemaPlayer</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: colors.primary }, (generateMutation.isPending || isPolling) && { opacity: 0.6 }]}
+          onPress={handleGenerate}
+          disabled={generateMutation.isPending || isPolling}
+        >
+          {generateMutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Generate Trailer · 50 credits</Text>}
         </TouchableOpacity>
       </ScrollView>
+
+      {playerVideo && (
+        <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setPlayerVideo(null)}>
+          <CinemaPlayer
+            source={{ uri: playerVideo.videoUrl }}
+            title="Film Trailer"
+            subtitle={`${style} style`}
+            onClose={() => setPlayerVideo(null)}
+            autoPlay
+          />
+        </Modal>
+      )}
     </ScreenContainer>
   );
 }
@@ -57,6 +138,12 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
   costBox: { borderRadius: 10, borderWidth: 1, padding: 12 }, costText: { fontSize: 13 },
+  pollingCard: { borderRadius: 12, borderWidth: 1, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
+  pollingText: { fontSize: 14, flex: 1 },
+  resultCard: { borderRadius: 12, borderWidth: 2, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
+  resultIcon: { fontSize: 32 },
+  resultTitle: { fontSize: 14, fontWeight: "600" },
+  resultMeta: { fontSize: 12, marginTop: 2 },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   btnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

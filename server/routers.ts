@@ -10,7 +10,7 @@ import {
   getProjectCharacters, createCharacter,
   getProjectScript, saveScript,
   getStoryboardPanels, createStoryboardPanel,
-  getUserVideos, getProjectVideos, createVideo, updateVideo,
+  getUserVideos, getProjectVideos, getAllScenesWithVideo, createVideo, updateVideo,
   getChatHistory, saveChatMessage,
   getShotList, saveShotList,
   getBudgetEstimate, saveBudgetEstimate,
@@ -61,6 +61,7 @@ export const appRouter = router({
 
   scenes: router({
     list: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getProjectScenes(input.projectId)),
+    allWithVideo: protectedProcedure.query(async ({ ctx }) => getAllScenesWithVideo(ctx.user.id)),
     create: protectedProcedure.input(z.object({ projectId: z.number(), title: z.string(), description: z.string().optional(), sceneNumber: z.number(), location: z.string().optional(), timeOfDay: z.string().optional() })).mutation(async ({ input }) => { await createScene(input); return { success: true }; }),
     update: protectedProcedure.input(z.object({ id: z.number(), title: z.string().optional(), description: z.string().optional(), location: z.string().optional(), timeOfDay: z.string().optional(), status: z.enum(["draft","generating","ready","failed"]).optional(), videoUrl: z.string().optional() })).mutation(async ({ input }) => { const { id, ...data } = input; await updateScene(id, data as any); return { success: true }; }),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteScene(input.id); return { success: true }; }),

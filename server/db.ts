@@ -234,6 +234,27 @@ export async function getProjectVideos(projectId: number) {
   return db.select().from(videos).where(eq(videos.projectId, projectId)).orderBy(desc(videos.createdAt));
 }
 
+export async function getAllScenesWithVideo(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      id: scenes.id,
+      projectId: scenes.projectId,
+      title: scenes.title,
+      sceneNumber: scenes.sceneNumber,
+      status: scenes.status,
+      videoUrl: scenes.videoUrl,
+      thumbnailUrl: scenes.thumbnailUrl,
+      updatedAt: scenes.updatedAt,
+    })
+    .from(scenes)
+    .innerJoin(projects, eq(scenes.projectId, projects.id))
+    .where(and(eq(projects.userId, userId), eq(scenes.status, "ready")))
+    .orderBy(desc(scenes.updatedAt));
+  return rows.filter((r) => !!r.videoUrl);
+}
+
 export async function createVideo(data: typeof videos.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

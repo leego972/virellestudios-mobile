@@ -6,11 +6,16 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Modal,
+  Image,
+  FlatList,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import CinemaPlayer from "@/components/cinema-player";
 
 const PRODUCTION_TOOLS = [
   { id: "script-writer", label: "Script Writer", icon: "📝", description: "AI-generated screenplay" },
@@ -35,7 +40,12 @@ export default function ProjectDetailScreen() {
   const router = useRouter();
   const projectId = Number(id);
 
+  const [playerVideo, setPlayerVideo] = useState<{ videoUrl: string; title: string; subtitle?: string } | null>(null);
+
   const { data: project, isLoading } = trpc.projects.get.useQuery({ id: projectId });
+  const { data: scenes } = trpc.scenes.list.useQuery({ projectId }, { enabled: !!projectId });
+  const { data: projectVideos } = trpc.videos.projectVideos.useQuery({ projectId }, { enabled: !!projectId });
+
   const updateMutation = trpc.projects.update.useMutation();
   const deleteMutation = trpc.projects.delete.useMutation({
     onSuccess: () => router.back(),
@@ -51,6 +61,11 @@ export default function ProjectDetailScreen() {
   const handleToolPress = (toolId: string) => {
     router.push(`/tool/${toolId}?projectId=${projectId}` as never);
   };
+
+  // Scenes with video
+  const scenesWithVideo = (scenes as any[] | undefined)?.filter((s) => s.status === "ready" && s.videoUrl) ?? [];
+  // All generated videos for this project
+  const readyVideos = (projectVideos as any[] | undefined)?.filter((v) => v.status === "ready" && v.videoUrl) ?? [];
 
   if (isLoading) {
     return (
@@ -123,6 +138,68 @@ export default function ProjectDetailScreen() {
           </View>
         </View>
 
+        {/* Scene Videos Gallery */}
+        {scenesWithVideo.length > 0 && (
+          <View style={[styles.videoSection, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Scene Videos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}>
+              {scenesWithVideo.map((scene: any) => (
+                <TouchableOpacity
+                  key={scene.id}
+                  style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => setPlayerVideo({ videoUrl: scene.videoUrl, title: scene.title, subtitle: `Scene ${scene.sceneNumber}` })}
+                >
+                  {scene.thumbnailUrl ? (
+                    <Image source={{ uri: scene.thumbnailUrl }} style={styles.videoThumb} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.videoThumbPlaceholder, { backgroundColor: colors.border }]}>
+                      <Text style={styles.videoThumbIcon}>🎬</Text>
+                    </View>
+                  )}
+                  <View style={styles.playOverlay}>
+                    <View style={[styles.playCircle, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.playIcon}>▶</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.videoCardTitle, { color: colors.foreground }]} numberOfLines={1}>{scene.title}</Text>
+                  <Text style={[styles.videoCardMeta, { color: colors.muted }]}>Scene {scene.sceneNumber}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Generated Videos Gallery */}
+        {readyVideos.length > 0 && (
+          <View style={[styles.videoSection, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Generated Videos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}>
+              {readyVideos.map((video: any) => (
+                <TouchableOpacity
+                  key={video.id}
+                  style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => setPlayerVideo({ videoUrl: video.videoUrl, title: video.prompt ?? "Generated Video", subtitle: `${video.duration}s · ${video.type ?? "clip"}` })}
+                >
+                  {video.thumbnailUrl ? (
+                    <Image source={{ uri: video.thumbnailUrl }} style={styles.videoThumb} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.videoThumbPlaceholder, { backgroundColor: colors.border }]}>
+                      <Text style={styles.videoThumbIcon}>🎥</Text>
+                    </View>
+                  )}
+                  <View style={styles.playOverlay}>
+                    <View style={[styles.playCircle, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.playIcon}>▶</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.videoCardTitle, { color: colors.foreground }]} numberOfLines={1}>{video.prompt ?? "Generated Video"}</Text>
+                  <Text style={[styles.videoCardMeta, { color: colors.muted }]}>{video.duration}s · {video.type ?? "clip"}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Production Tools Grid */}
         <View style={styles.toolsSection}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Production Tools</Text>
@@ -141,6 +218,19 @@ export default function ProjectDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* CinemaPlayer Modal */}
+      {playerVideo && (
+        <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setPlayerVideo(null)}>
+          <CinemaPlayer
+            source={{ uri: playerVideo.videoUrl }}
+            title={playerVideo.title}
+            subtitle={playerVideo.subtitle}
+            onClose={() => setPlayerVideo(null)}
+            autoPlay
+          />
+        </Modal>
+      )}
     </ScreenContainer>
   );
 }
@@ -163,8 +253,18 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: "row", gap: 8, marginTop: 4 },
   statusChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   statusText: { fontSize: 12, fontWeight: "500", textTransform: "capitalize" },
+  videoSection: { paddingVertical: 20, borderBottomWidth: 0.5 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 14, paddingHorizontal: 20 },
+  videoCard: { width: 160, borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  videoThumb: { width: 160, height: 90 },
+  videoThumbPlaceholder: { width: 160, height: 90, alignItems: "center", justifyContent: "center" },
+  videoThumbIcon: { fontSize: 28 },
+  playOverlay: { position: "absolute", top: 0, left: 0, width: 160, height: 90, alignItems: "center", justifyContent: "center" },
+  playCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", opacity: 0.9 },
+  playIcon: { color: "#fff", fontSize: 16, marginLeft: 3 },
+  videoCardTitle: { fontSize: 12, fontWeight: "600", paddingHorizontal: 8, paddingTop: 6 },
+  videoCardMeta: { fontSize: 11, paddingHorizontal: 8, paddingBottom: 8 },
   toolsSection: { padding: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 14 },
   toolsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   toolCard: { width: "47%", borderRadius: 14, borderWidth: 1, padding: 16, gap: 6 },
   toolIcon: { fontSize: 28 },

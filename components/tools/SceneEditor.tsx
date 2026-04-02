@@ -1,9 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Modal, Image } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import CinemaPlayer from "@/components/cinema-player";
 
 const TIMES = ["Day", "Night", "Dawn", "Dusk", "Interior", "Exterior"];
 const STATUSES = ["draft", "generating", "ready", "failed"] as const;
@@ -18,6 +19,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function SceneEditorScreen({ projectId }: { projectId?: number }) {
   const colors = useColors();
   const router = useRouter();
+  const [playerScene, setPlayerScene] = useState<{ videoUrl: string; title: string } | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -100,6 +102,10 @@ export default function SceneEditorScreen({ projectId }: { projectId?: number })
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Scenes ({scenes.length})</Text>
             {scenes.map((scene) => (
               <View key={scene.id} style={[styles.sceneCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {/* Thumbnail */}
+                {(scene as any).thumbnailUrl ? (
+                  <Image source={{ uri: (scene as any).thumbnailUrl }} style={styles.sceneThumbnail} resizeMode="cover" />
+                ) : null}
                 <View style={styles.sceneCardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.sceneNum, { color: colors.primary }]}>Scene {scene.sceneNumber}</Text>
@@ -115,6 +121,17 @@ export default function SceneEditorScreen({ projectId }: { projectId?: number })
                   <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.border }]} onPress={() => startEdit(scene)}>
                     <Text style={[styles.actionText, { color: colors.foreground }]}>Edit</Text>
                   </TouchableOpacity>
+                  {(scene as any).status === "ready" && (scene as any).videoUrl && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { borderColor: colors.primary, backgroundColor: colors.primary + "22" }]}
+                      onPress={() => setPlayerScene({ videoUrl: (scene as any).videoUrl, title: scene.title })}
+                    >
+                      <Text style={[styles.actionText, { color: colors.primary }]}>▶ Play</Text>
+                    </TouchableOpacity>
+                  )}
+                  {(scene as any).status === "generating" && (
+                    <ActivityIndicator color={colors.primary} size="small" style={{ marginLeft: 4 }} />
+                  )}
                   <TouchableOpacity
                     style={[styles.actionBtn, { borderColor: "#ef4444" + "44" }]}
                     onPress={() => Alert.alert("Delete Scene", `Delete "${scene.title}"?`, [
@@ -227,6 +244,18 @@ export default function SceneEditorScreen({ projectId }: { projectId?: number })
           </View>
         )}
       </ScrollView>
+
+      {playerScene && (
+        <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setPlayerScene(null)}>
+          <CinemaPlayer
+            source={{ uri: playerScene.videoUrl }}
+            title={playerScene.title}
+            subtitle="Scene Preview"
+            onClose={() => setPlayerScene(null)}
+            autoPlay
+          />
+        </Modal>
+      )}
     </ScreenContainer>
   );
 }
@@ -237,7 +266,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: "600" },
   addBtn: { fontSize: 16, fontWeight: "600" },
   sectionTitle: { fontSize: 16, fontWeight: "600" },
-  sceneCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 8 },
+  sceneCard: { borderRadius: 14, borderWidth: 1, gap: 8, overflow: "hidden" },
+  sceneThumbnail: { width: "100%", height: 120 },
   sceneCardHeader: { flexDirection: "row", alignItems: "flex-start" },
   sceneNum: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   sceneTitle: { fontSize: 16, fontWeight: "600" },
