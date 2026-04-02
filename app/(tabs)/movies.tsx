@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
-import ProfessionalVideoPlayer from "@/components/professional-video-player";
+import CinemaPlayer from "@/components/cinema-player";
 
 const STATUS_ICONS: Record<string, string> = {
   generating: "⏳",
@@ -116,9 +116,10 @@ export default function MoviesScreen() {
           presentationStyle="fullScreen"
           onRequestClose={() => setSelectedVideo(null)}
         >
-          <ProfessionalVideoPlayer
+          <CinemaPlayer
             source={{ uri: selectedVideo.videoUrl }}
             title={selectedVideo.prompt}
+            subtitle={`${selectedVideo.type} · ${selectedVideo.duration}s`}
             onClose={() => setSelectedVideo(null)}
             autoPlay={true}
           />
