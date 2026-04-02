@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "requireCommit": false,
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "credentialsSource": "remote"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascApiKeyPath": "$EXPO_APPLE_API_KEY_PATH",
+        "ascApiKeyIssuerId": "$EXPO_APPLE_API_ISSUER_ID",
+        "ascApiKeyId": "$EXPO_APPLE_API_KEY_ID",
+        "appleTeamId": "5AUSX9646V",
+        "ascAppId": "6761315616",
+        "language": "en-US"
+      }
+    }
+  }
+}
