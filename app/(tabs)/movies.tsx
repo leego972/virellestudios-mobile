@@ -5,11 +5,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Modal,
 } from "react-native";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import ProfessionalVideoPlayer from "@/components/professional-video-player";
 
 const STATUS_ICONS: Record<string, string> = {
   generating: "⏳",
@@ -28,6 +31,7 @@ export default function MoviesScreen() {
   const colors = useColors();
   const router = useRouter();
   const { data: videos, isLoading, refetch } = trpc.videos.list.useQuery();
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
 
   return (
     <ScreenContainer containerClassName="bg-background">
@@ -67,7 +71,15 @@ export default function MoviesScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <View style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => {
+                if (item.status === "ready" && item.videoUrl) {
+                  setSelectedVideo(item);
+                }
+              }}
+              disabled={item.status !== "ready" || !item.videoUrl}
+            >
               <View style={[styles.videoThumb, { backgroundColor: colors.surface2 }]}>
                 <Text style={styles.videoThumbIcon}>
                   {item.status === "ready" ? "▶️" : STATUS_ICONS[item.status] ?? "🎬"}
@@ -91,9 +103,26 @@ export default function MoviesScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         />
+      )}
+
+      {/* Video Player Modal */}
+      {selectedVideo && selectedVideo.videoUrl && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setSelectedVideo(null)}
+        >
+          <ProfessionalVideoPlayer
+            source={{ uri: selectedVideo.videoUrl }}
+            title={selectedVideo.prompt}
+            onClose={() => setSelectedVideo(null)}
+            autoPlay={true}
+          />
+        </Modal>
       )}
     </ScreenContainer>
   );
