@@ -7,7 +7,7 @@
  * To update: run `pnpm sync-mobile` in the virellestudios repo,
  * then commit the result in virellestudios-mobile.
  *
- * Last generated: 2026-04-06T13:12:52.065Z
+ * Last generated: 2026-04-06T13:54:53.019Z
  */
 
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
@@ -137,6 +137,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": false,
     "canUseScriptWriter": false,
     "canUseStoryboard": false,
+    "canUseCreditsEditor": false,
     "canUseCollaboration": false,
     "canExportMovies": false,
     "canExportHD": false,
@@ -195,6 +196,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": false,
     "canUseScriptWriter": true,
     "canUseStoryboard": false,
+    "canUseCreditsEditor": false,
     "canUseCollaboration": false,
     "canExportMovies": false,
     "canExportHD": false,
@@ -253,6 +255,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": false,
     "canExportMovies": true,
     "canExportHD": true,
@@ -312,6 +315,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": true,
     "canExportMovies": true,
     "canExportHD": true,
@@ -372,6 +376,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": true,
     "canExportMovies": true,
     "canExportHD": true,
@@ -432,6 +437,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": true,
     "canExportMovies": true,
     "canExportHD": true,
@@ -492,6 +498,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": true,
     "canExportMovies": true,
     "canExportHD": true,
@@ -552,6 +559,7 @@ export const TIER_LIMITS = {
     "canUseContinuityCheck": true,
     "canUseScriptWriter": true,
     "canUseStoryboard": true,
+    "canUseCreditsEditor": true,
     "canUseCollaboration": true,
     "canExportMovies": true,
     "canExportHD": true,
@@ -766,7 +774,7 @@ export const TOP_UP_PACKS = [
   },
   {
     "id": "topup_200",
-    "name": "Studio Pack",
+    "name": "Filmmaker Pack",
     "credits": 2000,
     "price": 19900,
     "pricePerCredit": 0.1,
