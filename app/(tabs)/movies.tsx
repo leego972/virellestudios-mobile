@@ -191,7 +191,6 @@ export default function MoviesScreen() {
             <Text style={[styles.sectionHeader, { color: colors.foreground }]}>{section.title}</Text>
           )}
           renderItem={renderVideoCard}
-          staggeredGridCells={1}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           SectionSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
