@@ -70,19 +70,19 @@ const SELF_SERVE_TIERS = [
   },
   {
     id: "independent",
-    name: "Studio",
+    name: "Industry",
     monthlyPrice: 1490,
     annualPrice: 14900,
     credits: "6,000 credits/mo",
     creditNote: "~600 video scenes",
-    color: "#8B5CF6",
+    color: "#F59E0B",
     badge: "Commercial",
     features: [
       "Everything in Creator, plus:",
       "Film Post-Production (ADR, Foley, Score, Mix)",
       "Subtitles in 130+ languages",
       "VFX Suite & Bulk Generation",
-      "Ad & Poster Maker",
+      "Multi-Shot Sequencer & NLE Export",
       "Up to 25 projects, 90 min per film",
       "4K + ProRes export",
       "5 team members",
@@ -93,42 +93,19 @@ const SELF_SERVE_TIERS = [
   },
 ];
 
+// Enterprise / custom-pricing tier (contact sales)
 const ENTERPRISE_TIERS = [
   {
-    id: "studio",
-    name: "Production",
-    priceDisplay: "From A$4,990/mo",
-    credits: "15,500 credits/mo",
-    creditNote: "~1,550 video scenes",
-    color: "#3B82F6",
-    badge: "Production",
-    features: [
-      "Everything in Studio, plus:",
-      "Up to 100 projects, 150 min per film",
-      "VFX Suite (Advanced Effects)",
-      "Multi-Shot Sequencer",
-      "NLE / DaVinci Resolve Export",
-      "AI Casting Tool",
-      "White-Label Exports",
-      "25 team members",
-      "API Access & Pipeline Integration",
-      "Global Funding Directory",
-    ],
-    cta: "Book a Demo",
-    selfServe: false,
-  },
-  {
     id: "industry",
-    name: "Enterprise",
+    name: "Industry (Enterprise)",
     priceDisplay: "Custom Pricing",
     credits: "Tailored to scope",
     creditNote: "",
     color: "#EF4444",
     badge: "Enterprise",
     features: [
-      "Everything in Production, plus:",
+      "Everything in Industry, plus:",
       "Unlimited projects, 180 min per film",
-      "4K + ProRes export",
       "Live Action Plate Compositing",
       "Custom AI Model Fine-Tuning",
       "Dedicated Account Manager",
@@ -309,7 +286,7 @@ export default function SubscriptionScreen({ projectId }: { projectId?: number }
         })}
 
         {/* Enterprise Tiers */}
-        <Text style={[styles.sectionLabel, { color: colors.muted, marginTop: 8 }]}>ENTERPRISE & PRODUCTION</Text>
+        <Text style={[styles.sectionLabel, { color: colors.muted, marginTop: 8 }]}>ENTERPRISE</Text>
         {ENTERPRISE_TIERS.map((tier) => {
           const isCurrent = currentTierId === tier.id;
           return (
@@ -356,7 +333,7 @@ export default function SubscriptionScreen({ projectId }: { projectId?: number }
           <Text style={[styles.comparisonTitle, { color: colors.foreground }]}>Why Virelle?</Text>
           <Text style={[styles.comparisonText, { color: colors.muted }]}>
             Runway charges ~A$120/mo for 125 video seconds. ElevenLabs charges ~A$156/mo for voice only.
-            Virelle's Indie plan at A$149/mo includes screenplay, voice acting, film score, and export.
+            Virelle's Creator plan at A$490/mo includes screenplay, video generation, voice acting, and film score.
             You're not paying for clips — you're paying for a complete film studio.
           </Text>
         </View>

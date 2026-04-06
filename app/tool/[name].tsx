@@ -39,31 +39,33 @@ import SceneEditorScreen from "@/components/tools/SceneEditor";
  * Mirrors the minTier values in hooks/use-feature-registry.ts.
  * Tools not listed here are treated as "free" (always accessible).
  */
+// Mirrors minTier in hooks/use-feature-registry.ts.
+// Three canonical tiers: indie (Indie), amateur (Creator), independent (Industry).
 const TOOL_MIN_TIER: Record<string, string> = {
   // Writing
-  "script-writer":        "amateur",
-  "dialogue":             "amateur",
+  "script-writer":        "indie",
+  "dialogue":             "indie",
   "scene-builder":        "free",
   "scene-editor":         "free",
   // Visual
   "storyboard":           "amateur",
-  "mood-board":           "amateur",
-  "color-grading":        "independent",
+  "mood-board":           "indie",
+  "color-grading":        "amateur",
   // AI Video
-  "video-generation":     "independent",
-  "trailer":              "creator",
-  "film-generator":       "creator",
+  "video-generation":     "amateur",
+  "trailer":              "independent",
+  "film-generator":       "independent",
   // Production
-  "shot-list":            "amateur",
-  "budget":               "independent",
+  "shot-list":            "indie",
+  "budget":               "indie",
   "characters":           "free",
   // Post-Production
   "subtitles":            "amateur",
-  "continuity":           "independent",
-  "sound-effects":        "independent",
+  "continuity":           "amateur",
+  "sound-effects":        "amateur",
   "film-post-production": "independent",
   // Management
-  "team":                 "creator",
+  "team":                 "independent",
   "credits-editor":       "amateur",
   "funding-directory":    "independent",
   // Account (always free)
@@ -76,15 +78,15 @@ const TOOL_MIN_TIER: Record<string, string> = {
   "terms":                "free",
 };
 
-/** Human-readable tier display names for upgrade alerts. */
+/** Human-readable tier display names for upgrade alerts. Three public tiers: Indie, Creator, Industry. */
 const TIER_DISPLAY: Record<string, string> = {
   free:        "Free",
   indie:       "Indie",
   amateur:     "Creator",
-  independent: "Studio",
-  creator:     "Studio",
-  studio:      "Production",
-  industry:    "Enterprise",
+  independent: "Industry",
+  creator:     "Industry",  // alias
+  studio:      "Industry",  // alias
+  industry:    "Industry",
   beta:        "Beta",
 };
 

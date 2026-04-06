@@ -21,23 +21,24 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // minTier must match the feature registry (hooks/use-feature-registry.ts).
 // voice-acting → sound-effects (independent), film-score → film-post-production (independent)
 const QUICK_TOOLS = [
-  { id: "director-chat",      label: "Director Chat",   icon: "🎬", route: "/(tabs)/chat",                  color: "#8B5CF6", minTier: "free"        },
-  { id: "script-writer",      label: "Script Writer",   icon: "📝", route: "/tool/script-writer",           color: "#3B82F6", minTier: "amateur"     },
-  { id: "storyboard",         label: "Storyboard",      icon: "🎨", route: "/tool/storyboard",              color: "#F59E0B", minTier: "amateur"     },
-  { id: "video-generation",   label: "Video Gen",       icon: "🎥", route: "/tool/video-generation",        color: "#EF4444", minTier: "independent" },
-  { id: "sound-effects",      label: "Sound Effects",   icon: "🎙️", route: "/tool/sound-effects",           color: "#10B981", minTier: "independent" },
-  { id: "film-post-production", label: "Film Score",    icon: "🎵", route: "/tool/film-post-production",    color: "#EC4899", minTier: "independent" },
+  { id: "director-chat",        label: "Director Chat",  icon: "🎬", route: "/(tabs)/chat",               color: "#8B5CF6", minTier: "free"        },
+  { id: "script-writer",        label: "Script Writer",  icon: "📝", route: "/tool/script-writer",        color: "#3B82F6", minTier: "indie"       },
+  { id: "storyboard",           label: "Storyboard",     icon: "🎨", route: "/tool/storyboard",           color: "#F59E0B", minTier: "amateur"     },
+  { id: "video-generation",     label: "Video Gen",      icon: "🎥", route: "/tool/video-generation",     color: "#EF4444", minTier: "amateur"     },
+  { id: "sound-effects",        label: "Sound Effects",  icon: "🎤️", route: "/tool/sound-effects",        color: "#10B981", minTier: "amateur"     },
+  { id: "film-post-production", label: "Film Score",     icon: "🎵", route: "/tool/film-post-production", color: "#EC4899", minTier: "independent" },
 ];
 
 // ─── Tier display labels used for upgrade alerts ──────────────────────────────
+// Three public tiers: Indie, Creator, Industry. creator/studio are aliases for Industry.
 const TIER_DISPLAY: Record<string, string> = {
   free:        "Free",
   indie:       "Indie",
   amateur:     "Creator",
-  independent: "Studio",
-  creator:     "Studio",
-  studio:      "Production",
-  industry:    "Enterprise",
+  independent: "Industry",
+  creator:     "Industry",  // alias
+  studio:      "Industry",  // alias
+  industry:    "Industry",
   beta:        "Beta",
 };
 
@@ -49,18 +50,18 @@ const PLATFORM_STATS = [
   { label: "Film Tools", value: "30+" },
 ];
 
-// ─── Subscription tier display names ─────────────────────────────────────────
+// ─── Subscription tier display names (3 public tiers) ───────────────────────
 const TIER_LABELS: Record<string, { name: string; color: string }> = {
-  free:        { name: "Free",       color: "#6B7280" },
-  indie:       { name: "Indie",      color: "#10B981" },
-  amateur:     { name: "Creator",    color: "#F59E0B" },
-  independent: { name: "Studio",     color: "#8B5CF6" },
-  studio:      { name: "Production", color: "#3B82F6" },
-  industry:    { name: "Enterprise", color: "#EF4444" },
-  creator:     { name: "Creator",    color: "#F59E0B" },
-  beta:        { name: "Beta",       color: "#6B7280" },
+  free:        { name: "Free",     color: "#6B7280" },
+  indie:       { name: "Indie",    color: "#10B981" },
+  amateur:     { name: "Creator",  color: "#F59E0B" },
+  independent: { name: "Industry", color: "#F59E0B" },
+  creator:     { name: "Industry", color: "#F59E0B" }, // alias
+  studio:      { name: "Industry", color: "#F59E0B" }, // alias
+  industry:    { name: "Industry", color: "#F59E0B" },
+  beta:        { name: "Beta",     color: "#6B7280" },
   // Legacy aliases
-  beginner:    { name: "Indie",      color: "#10B981" },
+  beginner:    { name: "Indie",    color: "#10B981" },
 };
 
 export default function HomeScreen() {

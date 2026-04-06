@@ -10,24 +10,27 @@
  * Last generated: 2026-03-31T14:12:38.096Z
  */
 
+// Three public tiers: Indie (indie), Creator (amateur), Industry (independent).
+// creator/studio are legacy DB aliases for independent (Industry).
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
 
 export const TIER_DISPLAY_NAMES: Record<string, string> = {
   "indie": "Indie",
   "amateur": "Creator",
-  "independent": "Studio",
-  "creator": "Studio",
-  "studio": "Production",
-  "industry": "Enterprise",
+  "independent": "Industry",
+  "creator": "Industry",  // alias
+  "studio": "Industry",   // alias
+  "industry": "Industry",
   "beta": "Beta"
 };
 
+// Canonical ascending order. creator/studio are aliases for independent.
 export const TIER_ORDER: SubscriptionTier[] = [
   "indie",
   "amateur",
   "independent",
-  "creator",
-  "studio",
+  "creator",   // alias — same level as independent
+  "studio",    // alias — same level as independent
   "industry",
   "beta"
 ];
@@ -36,7 +39,6 @@ export const SELF_SERVE_TIERS: SubscriptionTier[] = [
   "indie",
   "amateur",
   "independent",
-  "creator"
 ];
 
 /** Monthly credits granted per subscription tier */
@@ -72,28 +74,28 @@ export const TIER_PRICING = {
     "annual": 124100,
     "annualTotal": 1490000,
     "monthlyTotal": 1788000,
-    "displayName": "Studio"
+    "displayName": "Industry"
   },
   "creator": {
     "monthly": 149000,
     "annual": 124100,
     "annualTotal": 1490000,
     "monthlyTotal": 1788000,
-    "displayName": "Studio"
+    "displayName": "Industry" // alias
   },
   "studio": {
-    "monthly": 0,
-    "annual": 0,
-    "annualTotal": 0,
-    "monthlyTotal": 0,
-    "displayName": "Production"
+    "monthly": 149000,
+    "annual": 124100,
+    "annualTotal": 1490000,
+    "monthlyTotal": 1788000,
+    "displayName": "Industry" // alias
   },
   "industry": {
     "monthly": 0,
     "annual": 0,
     "annualTotal": 0,
     "monthlyTotal": 0,
-    "displayName": "Enterprise"
+    "displayName": "Industry"
   },
   "beta": {
     "monthly": 0,

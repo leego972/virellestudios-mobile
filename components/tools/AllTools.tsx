@@ -12,8 +12,9 @@ import { useFeatureRegistry, FeatureEntry } from "@/hooks/use-feature-registry";
 import { trpc } from "@/lib/trpc";
 import { TIER_ORDER } from "@/shared/_core/subscription-constants";
 
-const TIER_COLORS: Record<string, string> = { free: "#6B7280", amateur: "#3B82F6", independent: "#8B5CF6", creator: "#F59E0B", studio: "#EF4444", industry: "#EC4899" };
-const TIER_LABELS: Record<string, string> = { free: "Free", amateur: "Amateur", independent: "Independent", creator: "Creator", studio: "Studio", industry: "Industry" };
+const TIER_COLORS: Record<string, string> = { free: "#6B7280", indie: "#3B82F6", amateur: "#10B981", independent: "#F59E0B", creator: "#F59E0B", studio: "#F59E0B", industry: "#F59E0B" };
+// Three public tiers: Indie, Creator, Industry. creator/studio are aliases for Industry.
+const TIER_LABELS: Record<string, string> = { free: "Free", indie: "Indie", amateur: "Creator", independent: "Industry", creator: "Industry", studio: "Industry", industry: "Industry" };
 const CATEGORIES = ["All", "Writing", "Visual", "AI Video", "Production", "Post-Production", "Management", "Account"];
 
 export default function AllToolsScreen({ projectId }: { projectId?: number }) {
