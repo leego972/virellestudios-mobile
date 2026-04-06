@@ -4,11 +4,13 @@
  * Native tools open natively; others open in an authenticated WebView.
  */
 import React, { useState, useMemo } from "react";
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, FlatList } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useFeatureRegistry, FeatureEntry } from "@/hooks/use-feature-registry";
+import { trpc } from "@/lib/trpc";
+import { TIER_ORDER } from "@/shared/_core/subscription-constants";
 
 const TIER_COLORS: Record<string, string> = { free: "#6B7280", amateur: "#3B82F6", independent: "#8B5CF6", creator: "#F59E0B", studio: "#EF4444", industry: "#EC4899" };
 const TIER_LABELS: Record<string, string> = { free: "Free", amateur: "Amateur", independent: "Independent", creator: "Creator", studio: "Studio", industry: "Industry" };
@@ -33,7 +35,30 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
     return filtered.reduce((acc, f) => { if (!acc[f.category]) acc[f.category] = []; acc[f.category].push(f); return acc; }, {} as Record<string, FeatureEntry[]>);
   }, [filtered, selectedCategory]);
 
+  const { data: creditsData } = trpc.credits.balance.useQuery();
+  const currentTier = creditsData?.tier ?? "none";
+
+  function canUseTool(minTier: string): boolean {
+    if (minTier === "free" || minTier === "none") return true;
+    const userIdx = TIER_ORDER.indexOf(currentTier as any);
+    const reqIdx = TIER_ORDER.indexOf(minTier as any);
+    if (userIdx === -1) return false; // not subscribed
+    return userIdx >= reqIdx;
+  }
+
   function openTool(feature: FeatureEntry) {
+    if (!canUseTool(feature.minTier)) {
+      const tierLabel = TIER_LABELS[feature.minTier] ?? feature.minTier;
+      Alert.alert(
+        "Upgrade Required",
+        `${feature.label} requires the ${tierLabel} plan or higher. Upgrade your subscription to unlock this tool.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "View Plans", onPress: () => router.push({ pathname: "/tool/[name]", params: { name: "subscription" } }) },
+        ]
+      );
+      return;
+    }
     if (feature.hasNative) {
       router.push({ pathname: "/tool/[name]", params: { name: feature.id, projectId: String(projectId ?? "") } });
     } else {
@@ -64,27 +89,32 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
         {Object.entries(grouped).map(([category, features]) => (
           <View key={category} style={{ paddingHorizontal: 16, paddingTop: 20 }}>
             <Text style={[styles.catTitle, { color: colors.muted }]}>{category.toUpperCase()}</Text>
-            {features.map(feature => (
-              <TouchableOpacity key={feature.id} style={[styles.toolRow, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => openTool(feature)} activeOpacity={0.7}>
+            {features.map(feature => {
+              const locked = !canUseTool(feature.minTier);
+              return (
+              <TouchableOpacity key={feature.id} style={[styles.toolRow, { backgroundColor: colors.surface, borderColor: colors.border, opacity: locked ? 0.55 : 1 }]} onPress={() => openTool(feature)} activeOpacity={0.7}>
                 <Text style={styles.toolIcon}>{feature.icon}</Text>
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.toolLabel, { color: colors.foreground }]}>{feature.label}</Text>
-                    {feature.isNew && <View style={[styles.badge, { backgroundColor: colors.primary }]}><Text style={styles.badgeText}>NEW</Text></View>}
+                    {feature.isNew && !locked && <View style={[styles.badge, { backgroundColor: colors.primary }]}><Text style={styles.badgeText}>NEW</Text></View>}
                     {!feature.hasNative && <View style={[styles.badge, { backgroundColor: colors.border }]}><Text style={[styles.badgeText, { color: colors.muted }]}>WEB</Text></View>}
                   </View>
                   <Text style={[styles.toolDesc, { color: colors.muted }]} numberOfLines={1}>{feature.description}</Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {feature.minTier !== "free" && (
+                  {locked ? (
+                    <Text style={{ fontSize: 16 }}>🔒</Text>
+                  ) : feature.minTier !== "free" ? (
                     <View style={[styles.tierBadge, { backgroundColor: (TIER_COLORS[feature.minTier] ?? "#6B7280") + "20" }]}>
                       <Text style={[styles.tierText, { color: TIER_COLORS[feature.minTier] ?? "#6B7280" }]}>{TIER_LABELS[feature.minTier]}</Text>
                     </View>
-                  )}
+                  ) : null}
                   <Text style={{ color: colors.muted, fontSize: 20 }}>›</Text>
                 </View>
               </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
         ))}
         {filtered.length === 0 && (

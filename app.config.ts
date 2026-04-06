@@ -50,6 +50,9 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
+    entitlements: {
+      "aps-environment": "production",
+    },
     "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -90,6 +93,12 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    [
+      "expo-notifications",
+      {
+        "iosDisplayInForeground": true
+      }
+    ],
     [
       "expo-audio",
       {
