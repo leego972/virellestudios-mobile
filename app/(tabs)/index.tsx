@@ -6,24 +6,40 @@ import {
   StyleSheet,
   Image,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { TIER_ORDER } from "@/shared/_core/subscription-constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Quick Action Tools ───────────────────────────────────────────────────────
+// minTier must match the feature registry (hooks/use-feature-registry.ts).
+// voice-acting → sound-effects (independent), film-score → film-post-production (independent)
 const QUICK_TOOLS = [
-  { id: "director-chat",   label: "Director Chat",   icon: "🎬", route: "/(tabs)/chat",              color: "#8B5CF6" },
-  { id: "script-writer",   label: "Script Writer",   icon: "📝", route: "/tool/script-writer",       color: "#3B82F6" },
-  { id: "storyboard",      label: "Storyboard",      icon: "🎨", route: "/tool/storyboard",          color: "#F59E0B" },
-  { id: "video-gen",       label: "Video Gen",       icon: "🎥", route: "/tool/video-generation",    color: "#EF4444" },
-  { id: "voice-acting",    label: "Voice Acting",    icon: "🎙️", route: "/tool/voice-acting",        color: "#10B981" },
-  { id: "film-score",      label: "Film Score",      icon: "🎵", route: "/tool/film-score",          color: "#EC4899" },
+  { id: "director-chat",      label: "Director Chat",   icon: "🎬", route: "/(tabs)/chat",                  color: "#8B5CF6", minTier: "free"        },
+  { id: "script-writer",      label: "Script Writer",   icon: "📝", route: "/tool/script-writer",           color: "#3B82F6", minTier: "amateur"     },
+  { id: "storyboard",         label: "Storyboard",      icon: "🎨", route: "/tool/storyboard",              color: "#F59E0B", minTier: "amateur"     },
+  { id: "video-generation",   label: "Video Gen",       icon: "🎥", route: "/tool/video-generation",        color: "#EF4444", minTier: "independent" },
+  { id: "sound-effects",      label: "Sound Effects",   icon: "🎙️", route: "/tool/sound-effects",           color: "#10B981", minTier: "independent" },
+  { id: "film-post-production", label: "Film Score",    icon: "🎵", route: "/tool/film-post-production",    color: "#EC4899", minTier: "independent" },
 ];
+
+// ─── Tier display labels used for upgrade alerts ──────────────────────────────
+const TIER_DISPLAY: Record<string, string> = {
+  free:        "Free",
+  indie:       "Indie",
+  amateur:     "Creator",
+  independent: "Studio",
+  creator:     "Studio",
+  studio:      "Production",
+  industry:    "Enterprise",
+  beta:        "Beta",
+};
 
 // ─── Production Stats ─────────────────────────────────────────────────────────
 const PLATFORM_STATS = [
@@ -59,6 +75,35 @@ export default function HomeScreen() {
   const creditPct = creditsData?.isUnlimited
     ? 100
     : Math.min(100, Math.round(((creditsData?.credits ?? 0) / (creditsData?.totalCredits ?? 1)) * 100));
+
+  const currentTier = creditsData?.tier ?? "none";
+
+  /** Returns true if the user's current tier meets or exceeds minTier. */
+  function canUseTool(minTier: string): boolean {
+    if (minTier === "free" || minTier === "none") return true;
+    const userIdx = TIER_ORDER.indexOf(currentTier as any);
+    const reqIdx  = TIER_ORDER.indexOf(minTier as any);
+    if (userIdx === -1) return false; // not subscribed
+    return userIdx >= reqIdx;
+  }
+
+  /** Navigate to a Quick Action tool, showing an upgrade alert if the user's
+   *  tier is insufficient. */
+  function openQuickTool(tool: typeof QUICK_TOOLS[number]) {
+    if (!canUseTool(tool.minTier)) {
+      const tierLabel = TIER_DISPLAY[tool.minTier] ?? tool.minTier;
+      Alert.alert(
+        "Upgrade Required",
+        `${tool.label} requires the ${tierLabel} plan or higher. Upgrade your subscription to unlock this tool.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "View Plans", onPress: () => router.push("/tool/subscription" as never) },
+        ]
+      );
+      return;
+    }
+    router.push(tool.route as never);
+  }
 
   return (
     <ScreenContainer containerClassName="bg-background">
@@ -147,19 +192,28 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
             <View style={styles.quickGrid}>
-              {QUICK_TOOLS.map((tool) => (
-                <TouchableOpacity
-                  key={tool.id}
-                  style={[styles.quickCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => router.push(tool.route as never)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.quickIconWrap, { backgroundColor: tool.color + "20" }]}>
-                    <Text style={styles.quickIcon}>{tool.icon}</Text>
-                  </View>
-                  <Text style={[styles.quickLabel, { color: colors.foreground }]}>{tool.label}</Text>
-                </TouchableOpacity>
-              ))}
+              {QUICK_TOOLS.map((tool) => {
+                const locked = !canUseTool(tool.minTier);
+                return (
+                  <TouchableOpacity
+                    key={tool.id}
+                    style={[
+                      styles.quickCard,
+                      { backgroundColor: colors.surface, borderColor: colors.border, opacity: locked ? 0.55 : 1 },
+                    ]}
+                    onPress={() => openQuickTool(tool)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.quickIconWrap, { backgroundColor: tool.color + "20" }]}>
+                      <Text style={styles.quickIcon}>{tool.icon}</Text>
+                    </View>
+                    <Text style={[styles.quickLabel, { color: colors.foreground }]}>{tool.label}</Text>
+                    {locked && (
+                      <Text style={[styles.quickLock, { color: colors.muted }]}>🔒</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
@@ -250,10 +304,10 @@ const styles = StyleSheet.create({
 
   // Credits card
   creditsCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    padding: 20,
-    gap: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+    gap: 12,
   },
   creditsTopRow: {
     flexDirection: "row",
@@ -264,27 +318,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
   },
   tierDot: { width: 7, height: 7, borderRadius: 4 },
   tierText: { fontSize: 12, fontWeight: "700" },
   upgradeButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
   },
-  upgradeText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  upgradeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   manageButton: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: 20,
     borderWidth: 1,
   },
-  manageText: { fontSize: 13, fontWeight: "600" },
-  creditsValueRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
-  creditsValue: { fontSize: 36, fontWeight: "800" },
+  manageText: { fontSize: 12, fontWeight: "600" },
+  creditsValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  creditsValue: { fontSize: 32, fontWeight: "800" },
   creditsLabel: { fontSize: 13 },
   progressTrack: {
     height: 6,
@@ -297,31 +355,42 @@ const styles = StyleSheet.create({
   },
 
   // Stats
-  statsRow: { flexDirection: "row", gap: 8 },
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
   statCard: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     padding: 12,
     alignItems: "center",
     gap: 4,
   },
-  statValue: { fontSize: 15, fontWeight: "800" },
+  statValue: { fontSize: 16, fontWeight: "800" },
   statLabel: { fontSize: 10, textAlign: "center" },
 
-  // Sections
+  // Section
   section: { gap: 12 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: { fontSize: 18, fontWeight: "800" },
-  seeAll: { fontSize: 13, fontWeight: "600" },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sectionTitle: { fontSize: 17, fontWeight: "700" },
+  seeAll: { fontSize: 13 },
 
-  // Quick tools
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  // Quick grid
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
   quickCard: {
-    width: (SCREEN_WIDTH - 60) / 3,
-    borderRadius: 16,
+    width: (SCREEN_WIDTH - 40 - 10) / 3 - 4,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 14,
+    padding: 12,
     alignItems: "center",
     gap: 8,
   },
@@ -334,59 +403,59 @@ const styles = StyleSheet.create({
   },
   quickIcon: { fontSize: 22 },
   quickLabel: { fontSize: 11, fontWeight: "600", textAlign: "center" },
+  quickLock: { fontSize: 10, marginTop: -4 },
 
   // Empty state
   emptyCard: {
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    borderStyle: "dashed",
-    padding: 32,
+    padding: 24,
     alignItems: "center",
     gap: 10,
   },
-  emptyIcon: { fontSize: 44 },
+  emptyIcon: { fontSize: 40 },
   emptyTitle: { fontSize: 17, fontWeight: "700" },
-  emptySubtitle: { fontSize: 13, textAlign: "center", lineHeight: 18 },
+  emptySubtitle: { fontSize: 13, textAlign: "center" },
   emptyButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
     marginTop: 4,
   },
-  emptyButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  emptyButtonText: { color: "#fff", fontWeight: "700" },
 
-  // Project cards
+  // Project card
   projectCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
     flexDirection: "row",
     alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
     gap: 12,
   },
   projectThumb: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   projectThumbIcon: { fontSize: 22 },
   projectInfo: { flex: 1 },
-  projectTitle: { fontSize: 15, fontWeight: "700" },
+  projectTitle: { fontSize: 14, fontWeight: "700" },
   projectMeta: { fontSize: 12, marginTop: 2 },
-  projectArrow: { fontSize: 22 },
+  projectArrow: { fontSize: 20 },
 
-  // All tools
+  // All tools CTA
   allToolsCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 20,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
   },
-  allToolsTitle: { fontSize: 16, fontWeight: "700" },
+  allToolsTitle: { fontSize: 15, fontWeight: "700" },
   allToolsSubtitle: { fontSize: 12, marginTop: 3 },
-  allToolsArrow: { fontSize: 24, fontWeight: "700" },
+  allToolsArrow: { fontSize: 22 },
 });
