@@ -65,7 +65,7 @@ const TOP_UP_PACKS = [
   { id: "topup_10",   name: "Starter Pack",     credits: "100",    price: "A$19",   savings: "" },
   { id: "topup_50",   name: "Producer Pack",    credits: "300",    price: "A$49",   savings: "Save 16%" },
   { id: "topup_100",  name: "Director Pack",    credits: "750",    price: "A$99",   savings: "Save 32%" },
-  { id: "topup_200",  name: "Studio Pack",      credits: "2,000",  price: "A$199",  savings: "Save 47%" },
+  { id: "topup_200",  name: "Filmmaker Pack",      credits: "2,000",  price: "A$199",  savings: "Save 47%" },
   { id: "topup_500",  name: "Blockbuster Pack", credits: "5,000",  price: "A$399",  savings: "Save 58%" },
   { id: "topup_1000", name: "Mogul Pack",       credits: "12,000", price: "A$799",  savings: "Save 63%" },
 ];
