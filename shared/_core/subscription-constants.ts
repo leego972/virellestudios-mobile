@@ -7,30 +7,27 @@
  * To update: run `pnpm sync-mobile` in the virellestudios repo,
  * then commit the result in virellestudios-mobile.
  *
- * Last generated: 2026-03-31T14:12:38.096Z
+ * Last generated: 2026-04-06T13:12:52.065Z
  */
 
-// Three public tiers: Indie (indie), Creator (amateur), Industry (independent).
-// creator/studio are legacy DB aliases for independent (Industry).
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
 
 export const TIER_DISPLAY_NAMES: Record<string, string> = {
   "indie": "Indie",
   "amateur": "Creator",
   "independent": "Industry",
-  "creator": "Industry",  // alias
-  "studio": "Industry",   // alias
+  "creator": "Industry",
+  "studio": "Industry",
   "industry": "Industry",
   "beta": "Beta"
 };
 
-// Canonical ascending order. creator/studio are aliases for independent.
 export const TIER_ORDER: SubscriptionTier[] = [
   "indie",
   "amateur",
   "independent",
-  "creator",   // alias — same level as independent
-  "studio",    // alias — same level as independent
+  "creator",
+  "studio",
   "industry",
   "beta"
 ];
@@ -39,6 +36,7 @@ export const SELF_SERVE_TIERS: SubscriptionTier[] = [
   "indie",
   "amateur",
   "independent",
+  "creator"
 ];
 
 /** Monthly credits granted per subscription tier */
@@ -55,6 +53,13 @@ export const TIER_MONTHLY_CREDITS: Record<string, number> = {
 
 /** Pricing in AUD cents */
 export const TIER_PRICING = {
+  "none": {
+    "monthly": 0,
+    "annual": 0,
+    "annualTotal": 0,
+    "monthlyTotal": 0,
+    "displayName": "Free"
+  },
   "indie": {
     "monthly": 14900,
     "annual": 12400,
@@ -81,14 +86,14 @@ export const TIER_PRICING = {
     "annual": 124100,
     "annualTotal": 1490000,
     "monthlyTotal": 1788000,
-    "displayName": "Industry" // alias
+    "displayName": "Industry"
   },
   "studio": {
     "monthly": 149000,
     "annual": 124100,
     "annualTotal": 1490000,
     "monthlyTotal": 1788000,
-    "displayName": "Industry" // alias
+    "displayName": "Industry"
   },
   "industry": {
     "monthly": 0,
@@ -108,6 +113,64 @@ export const TIER_PRICING = {
 
 /** Feature flags per tier */
 export const TIER_LIMITS = {
+  "none": {
+    "maxProjects": 0,
+    "maxCharactersPerProject": 0,
+    "maxScenesPerProject": 0,
+    "maxGenerationsPerMonth": 0,
+    "maxMovieExports": 0,
+    "maxCollaboratorsPerProject": 0,
+    "maxScriptsPerProject": 0,
+    "maxStorageMB": 0,
+    "canUseQuickGenerate": false,
+    "canUseTrailerGeneration": false,
+    "canUseDirectorAssistant": false,
+    "canUseAdPosterMaker": false,
+    "canUseBudgetEstimator": false,
+    "canUseColorGrading": false,
+    "canUseSoundEffects": false,
+    "canUseSubtitles": false,
+    "canUseDialogueEditor": false,
+    "canUseLocationScout": false,
+    "canUseMoodBoard": false,
+    "canUseShotList": false,
+    "canUseContinuityCheck": false,
+    "canUseScriptWriter": false,
+    "canUseStoryboard": false,
+    "canUseCollaboration": false,
+    "canExportMovies": false,
+    "canExportHD": false,
+    "canUseAICharacterGen": false,
+    "canUseAIScriptGen": false,
+    "canUseAIDialogueGen": false,
+    "canUseAIBudgetGen": false,
+    "canUseAISubtitleGen": false,
+    "canUseAILocationSuggest": false,
+    "canUseFullFilmGeneration": false,
+    "canUseAIVoiceActing": false,
+    "canUseAISoundtrack": false,
+    "canUseCharacterConsistency": false,
+    "canUseSceneContinuity": false,
+    "canUseClipChaining": false,
+    "canUseVisualEffects": false,
+    "canUseBulkGenerate": false,
+    "canUseMultiShotSequencer": false,
+    "canUseLiveActionPlate": false,
+    "canUseNLEExport": false,
+    "canUseAICasting": false,
+    "canExportUltraHD": false,
+    "canUseWhiteLabel": false,
+    "canUseAPIAccess": false,
+    "canUseCustomFineTuning": false,
+    "canUsePriorityRendering": false,
+    "resolution": "720p",
+    "quality": [
+      "standard"
+    ],
+    "maxDurationMinutes": 0,
+    "maxClipsPerScene": 0,
+    "monthlyCredits": 0
+  },
   "indie": {
     "maxProjects": 2,
     "maxCharactersPerProject": 3,
@@ -680,50 +743,50 @@ export const TOP_UP_PACKS = [
   {
     "id": "topup_10",
     "name": "Starter Pack",
-    "credits": 500,
-    "price": 75000,
-    "pricePerCredit": 1.5,
+    "credits": 100,
+    "price": 1900,
+    "pricePerCredit": 0.19,
     "savings": ""
   },
   {
     "id": "topup_50",
     "name": "Producer Pack",
-    "credits": 1500,
-    "price": 180000,
-    "pricePerCredit": 1.2,
-    "savings": "Save 20%"
+    "credits": 300,
+    "price": 4900,
+    "pricePerCredit": 0.16,
+    "savings": "Save 16%"
   },
   {
     "id": "topup_100",
     "name": "Director Pack",
-    "credits": 3000,
-    "price": 315000,
-    "pricePerCredit": 1.05,
-    "savings": "Save 30%"
+    "credits": 750,
+    "price": 9900,
+    "pricePerCredit": 0.13,
+    "savings": "Save 32%"
   },
   {
     "id": "topup_200",
     "name": "Studio Pack",
-    "credits": 6000,
-    "price": 540000,
-    "pricePerCredit": 0.9,
-    "savings": "Save 40%"
+    "credits": 2000,
+    "price": 19900,
+    "pricePerCredit": 0.1,
+    "savings": "Save 47%"
   },
   {
     "id": "topup_500",
     "name": "Blockbuster Pack",
-    "credits": 12000,
-    "price": 900000,
-    "pricePerCredit": 0.75,
-    "savings": "Save 50%"
+    "credits": 5000,
+    "price": 39900,
+    "pricePerCredit": 0.08,
+    "savings": "Save 58%"
   },
   {
     "id": "topup_1000",
     "name": "Mogul Pack",
-    "credits": 25000,
-    "price": 1500000,
-    "pricePerCredit": 0.6,
-    "savings": "Save 60%"
+    "credits": 12000,
+    "price": 79900,
+    "pricePerCredit": 0.07,
+    "savings": "Save 63%"
   }
 ] as const;
 

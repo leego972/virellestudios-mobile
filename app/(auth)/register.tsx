@@ -47,9 +47,9 @@ export default function RegisterScreen() {
 
           <View style={styles.tierCards}>
             {[
-              { tier: "Free", price: "$0", credits: "100 credits", color: colors.muted },
-              { tier: "Amateur", price: "$500/mo", credits: "5,000 credits", color: colors.primary },
-              { tier: "Studio", price: "$15k/mo", credits: "250,000 credits", color: colors.accent },
+              { tier: "Indie",    price: "A$149/mo",   credits: "500 credits/mo",   color: "#10B981" },
+              { tier: "Creator",  price: "A$490/mo",   credits: "2,000 credits/mo", color: colors.primary },
+              { tier: "Industry", price: "A$1,490/mo", credits: "6,000 credits/mo", color: colors.accent },
             ].map((t) => (
               <View key={t.tier} style={[styles.tierCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.tierName, { color: t.color }]}>{t.tier}</Text>

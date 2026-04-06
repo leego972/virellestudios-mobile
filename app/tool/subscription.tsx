@@ -23,18 +23,19 @@ import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/constants/oauth";
 
 // ─── Tier metadata ────────────────────────────────────────────────────────────
+// Three public tiers: Indie (indie), Creator (amateur), Industry (independent/creator/studio/industry)
 const TIER_META: Record<string, { label: string; color: string; icon: string }> = {
-  free:        { label: "Free",       color: "#6B7280", icon: "🆓" },
-  indie:       { label: "Indie",      color: "#10B981", icon: "🎬" },
-  amateur:     { label: "Creator",    color: "#F59E0B", icon: "🎨" },
-  independent: { label: "Studio",     color: "#8B5CF6", icon: "🏢" },
-  studio:      { label: "Production", color: "#3B82F6", icon: "🎥" },
-  industry:    { label: "Enterprise", color: "#EF4444", icon: "🌟" },
-  creator:     { label: "Creator",    color: "#F59E0B", icon: "🎨" },
+  free:        { label: "Free",     color: "#6B7280", icon: "🆓" },
+  indie:       { label: "Indie",    color: "#10B981", icon: "🎬" },
+  amateur:     { label: "Creator",  color: "#F59E0B", icon: "🎨" },
+  independent: { label: "Industry", color: "#8B5CF6", icon: "🏢" },
+  creator:     { label: "Industry", color: "#8B5CF6", icon: "🏢" },  // alias
+  studio:      { label: "Industry", color: "#8B5CF6", icon: "🏢" },  // alias
+  industry:    { label: "Industry", color: "#8B5CF6", icon: "🏢" },
 };
 
-// ─── Tier display order ───────────────────────────────────────────────────────
-const TIER_ORDER = ["indie", "independent", "creator", "studio", "industry"] as const;
+// ─── Tier display order (3 public tiers only) ────────────────────────────────
+const TIER_ORDER = ["indie", "amateur", "independent"] as const;
 
 // ─── Pricing display (AUD) ────────────────────────────────────────────────────
 const TIER_PRICING: Record<string, { monthly: string; annual: string; credits: string; features: string[] }> = {
@@ -42,42 +43,31 @@ const TIER_PRICING: Record<string, { monthly: string; annual: string; credits: s
     monthly: "A$149/mo",
     annual: "A$1,490/yr",
     credits: "500 credits/mo",
-    features: ["Screenplay tools", "Character creator", "Director assistant", "Shot list generator", "2 projects"],
+    features: ["AI Script Writer & Screenplay Tools", "Character Creator & DNA Lock", "Director's AI Assistant", "Location Scout & Mood Board", "Shot List Generator", "Up to 2 projects", "720p export"],
+  },
+  amateur: {
+    monthly: "A$490/mo",
+    annual: "A$4,900/yr",
+    credits: "2,000 credits/mo",
+    features: ["Everything in Indie, plus:", "Video Generation (Runway, Sora, Kling, Veo)", "AI Voice Acting (3,000+ voices)", "AI Film Score (Suno v4)", "Up to 10 projects", "1080p export"],
   },
   independent: {
-    monthly: "A$490/mo",
-    annual: "A$4,900/yr",
-    credits: "2,000 credits/mo",
-    features: ["Everything in Indie", "Video generation (720p)", "Voice acting", "Storyboard AI", "5 projects"],
-  },
-  creator: {
-    monthly: "A$490/mo",
-    annual: "A$4,900/yr",
-    credits: "2,000 credits/mo",
-    features: ["Everything in Indie", "Video generation (720p)", "Voice acting", "Storyboard AI", "5 projects"],
-  },
-  studio: {
     monthly: "A$1,490/mo",
     annual: "A$14,900/yr",
-    credits: "5,500 credits/mo",
-    features: ["Everything in Creator", "4K export", "Film score AI", "Collaboration", "20 projects"],
-  },
-  industry: {
-    monthly: "Custom",
-    annual: "Custom",
-    credits: "50,500 credits/mo",
-    features: ["Everything in Studio", "Unlimited projects", "White label", "API access", "Priority rendering"],
+    credits: "6,000 credits/mo",
+    features: ["Everything in Creator, plus:", "Film Post-Production (ADR, Foley, Score, Mix)", "VFX Suite & Multi-Shot Sequencer", "4K + ProRes export", "Up to 25 projects", "5 team members"],
   },
 };
 
 // ─── Top-up pack display ──────────────────────────────────────────────────────
+// Source of truth: virellestudios/server/_core/subscription.ts TOP_UP_PACKS
 const TOP_UP_PACKS = [
-  { id: "topup_10",   name: "Starter",     credits: "500",    price: "A$75",    savings: "" },
-  { id: "topup_50",   name: "Producer",    credits: "1,500",  price: "A$180",   savings: "Save 20%" },
-  { id: "topup_100",  name: "Director",    credits: "3,000",  price: "A$315",   savings: "Save 30%" },
-  { id: "topup_200",  name: "Studio",      credits: "6,000",  price: "A$540",   savings: "Save 40%" },
-  { id: "topup_500",  name: "Blockbuster", credits: "12,000", price: "A$900",   savings: "Save 50%" },
-  { id: "topup_1000", name: "Mogul",       credits: "25,000", price: "A$1,500", savings: "Save 60%" },
+  { id: "topup_10",   name: "Starter Pack",     credits: "100",    price: "A$19",   savings: "" },
+  { id: "topup_50",   name: "Producer Pack",    credits: "300",    price: "A$49",   savings: "Save 16%" },
+  { id: "topup_100",  name: "Director Pack",    credits: "750",    price: "A$99",   savings: "Save 32%" },
+  { id: "topup_200",  name: "Studio Pack",      credits: "2,000",  price: "A$199",  savings: "Save 47%" },
+  { id: "topup_500",  name: "Blockbuster Pack", credits: "5,000",  price: "A$399",  savings: "Save 58%" },
+  { id: "topup_1000", name: "Mogul Pack",       credits: "12,000", price: "A$799",  savings: "Save 63%" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -236,7 +226,9 @@ export default function SubscriptionScreen() {
           {TIER_ORDER.filter(t => TIER_PRICING[t]).map((tierId) => {
             const meta = TIER_META[tierId];
             const pricing = TIER_PRICING[tierId];
-            const isCurrent = tierId === currentTier || (tierId === "independent" && currentTier === "amateur") || (tierId === "creator" && currentTier === "amateur");
+            // Collapse all Industry aliases to the canonical "independent" display tier
+            const normalised = ["creator", "studio", "industry"].includes(currentTier) ? "independent" : currentTier;
+            const isCurrent = tierId === normalised;
             const isLoading = loadingTier === tierId;
 
             return (
@@ -281,7 +273,7 @@ export default function SubscriptionScreen() {
                 </View>
 
                 {/* CTA */}
-                {!isCurrent && tierId !== "industry" && (
+                {!isCurrent && (
                   <TouchableOpacity
                     style={[styles.upgradeCta, { backgroundColor: meta.color }]}
                     onPress={() => handleUpgrade(tierId)}
@@ -296,10 +288,10 @@ export default function SubscriptionScreen() {
                     )}
                   </TouchableOpacity>
                 )}
-                {tierId === "industry" && !isCurrent && (
+                {tierId === "independent" && !isCurrent && (
                   <TouchableOpacity
                     style={[styles.upgradeCta, { backgroundColor: meta.color }]}
-                    onPress={() => Linking.openURL("mailto:enterprise@virelle.life?subject=Enterprise Plan Enquiry")}
+                   onPress={() => Linking.openURL("mailto:industry@virelle.life?subject=Industry Plan Enquiry")}
                   >
                     <Text style={styles.upgradeCtaText}>Contact Sales</Text>
                   </TouchableOpacity>

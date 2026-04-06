@@ -75,7 +75,7 @@ const SELF_SERVE_TIERS = [
     annualPrice: 14900,
     credits: "6,000 credits/mo",
     creditNote: "~600 video scenes",
-    color: "#F59E0B",
+    color: "#8B5CF6",
     badge: "Commercial",
     features: [
       "Everything in Creator, plus:",

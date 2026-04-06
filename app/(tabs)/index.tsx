@@ -55,10 +55,10 @@ const TIER_LABELS: Record<string, { name: string; color: string }> = {
   free:        { name: "Free",     color: "#6B7280" },
   indie:       { name: "Indie",    color: "#10B981" },
   amateur:     { name: "Creator",  color: "#F59E0B" },
-  independent: { name: "Industry", color: "#F59E0B" },
-  creator:     { name: "Industry", color: "#F59E0B" }, // alias
-  studio:      { name: "Industry", color: "#F59E0B" }, // alias
-  industry:    { name: "Industry", color: "#F59E0B" },
+  independent: { name: "Industry", color: "#8B5CF6" },
+  creator:     { name: "Industry", color: "#8B5CF6" }, // alias
+  studio:      { name: "Industry", color: "#8B5CF6" }, // alias
+  industry:    { name: "Industry", color: "#8B5CF6" },
   beta:        { name: "Beta",     color: "#6B7280" },
   // Legacy aliases
   beginner:    { name: "Indie",    color: "#10B981" },
