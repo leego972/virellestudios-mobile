@@ -77,15 +77,52 @@ jobs:
           EXPO_APPLE_API_KEY_PATH: ${{ format('{0}/.appstoreconnect/private_keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY_ID) }}
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      # Queue Android build — produces a signed AAB for Play Store upload.
+      # Queue Android PRODUCTION build — produces a signed AAB for Play Store upload.
       # Play Store auto-submit requires a Google Service Account Key;
       # upload the AAB manually from the EAS dashboard until that is configured.
-      - name: Queue Android build
+      - name: Queue Android production build (AAB for Play Store)
         run: |
           eas build \
             --platform android \
             --non-interactive \
             --profile production \
             --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # ── EAS Preview APK — directly installable Android build ─────────────
+  # Produces a signed .apk that can be downloaded and sideloaded without
+  # going through the Play Store. The download URL is set as the
+  # ANDROID_DOWNLOAD_URL secret on the web server after each build.
+  eas-preview-apk:
+    name: EAS Preview APK (Android sideload)
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      # Build a preview APK (buildType: apk) — directly installable on Android devices.
+      # The artifact URL appears in the EAS dashboard once the build completes.
+      # Copy the .apk URL and set it as ANDROID_DOWNLOAD_URL on the web server.
+      - name: Queue Android preview APK build
+        run: |
+          eas build \
+            --platform android \
+            --non-interactive \
+            --profile preview \
+            --no-wait
+          echo "APK build queued. Download the .apk from the EAS dashboard once complete."
+          echo "Set the artifact URL as ANDROID_DOWNLOAD_URL on the web server to enable"
+          echo "direct APK download from the /download page."
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

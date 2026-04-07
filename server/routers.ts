@@ -85,11 +85,11 @@ export const appRouter = router({
     save: protectedProcedure.input(z.object({ projectId: z.number(), content: z.string() })).mutation(async ({ input }) => { await saveScript(input.projectId, input.content); return { success: true }; }),
     generate: protectedProcedure.input(z.object({ projectId: z.number(), premise: z.string(), genre: z.string().optional(), tone: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 10) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 8) throw new Error("Insufficient credits");
       const prompt = `Write a professional screenplay for a ${input.genre || "drama"} film.\nPremise: ${input.premise}\nTone: ${input.tone || "dramatic"}\n\nFormat as proper screenplay with INT./EXT. headings, action lines, and dialogue. Include 3 acts.`;
       const content = await generateAIText(prompt);
       await saveScript(input.projectId, content);
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -10, "Script generation", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -8, "Script generation", "spend");
       return { content };
     }),
   }),
@@ -98,9 +98,9 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getStoryboardPanels(input.projectId)),
     generatePanel: protectedProcedure.input(z.object({ projectId: z.number(), sceneId: z.number().optional(), panelNumber: z.number(), description: z.string(), cameraAngle: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 8) throw new Error("Insufficient credits");
       await createStoryboardPanel({ ...input, imageUrl: null });
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "Storyboard panel", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -8, "Storyboard panel", "spend");
       return { success: true };
     }),
   }),
@@ -122,12 +122,12 @@ export const appRouter = router({
     history: protectedProcedure.input(z.object({ projectId: z.number().optional() })).query(async ({ ctx, input }) => getChatHistory(ctx.user.id, input.projectId)),
     send: protectedProcedure.input(z.object({ message: z.string(), projectId: z.number().optional(), context: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 1) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 2) throw new Error("Insufficient credits");
       await saveChatMessage({ userId: ctx.user.id, projectId: input.projectId, role: "user", content: input.message });
       const systemPrompt = `You are the Virelle Studios AI Director — a world-class creative director and filmmaker. Help users develop their film projects with expert guidance on storytelling, cinematography, character development, and production. Be creative, inspiring, and specific.${input.context ? `\nProject context: ${input.context}` : ""}`;
       const response = await generateAIText(input.message, systemPrompt);
       await saveChatMessage({ userId: ctx.user.id, projectId: input.projectId, role: "assistant", content: response });
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -1, "Director chat", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -2, "Director chat", "spend");
       return { response };
     }),
   }),
@@ -165,10 +165,10 @@ export const appRouter = router({
   dialogue: router({
     enhance: protectedProcedure.input(z.object({ dialogue: z.string(), character: z.string().optional(), tone: z.string().optional(), context: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 3) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits");
       const prompt = `Enhance this film dialogue to be more cinematic:\nCharacter: ${input.character || "Unknown"}\nTone: ${input.tone || "dramatic"}\n\nOriginal:\n${input.dialogue}\n\nProvide enhanced dialogue that sounds natural and reveals character.`;
       const enhanced = await generateAIText(prompt);
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -3, "Dialogue enhancement", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "Dialogue enhancement", "spend");
       return { enhanced };
     }),
   }),
@@ -190,10 +190,10 @@ export const appRouter = router({
   subtitles: router({
     generate: protectedProcedure.input(z.object({ projectId: z.number(), scriptContent: z.string(), language: z.string().default("en") })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 8) throw new Error("Insufficient credits");
       const prompt = `Convert this screenplay to SRT subtitle format:\n\n${input.scriptContent}\n\nReturn valid SRT format with sequence numbers, timestamps (HH:MM:SS,mmm --> HH:MM:SS,mmm), and text.`;
       const srt = await generateAIText(prompt);
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "Subtitle generation", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -8, "Subtitle generation", "spend");
       return { srt };
     }),
   }),
@@ -269,9 +269,9 @@ export const appRouter = router({
   trailer: router({
     generate: protectedProcedure.input(z.object({ projectId: z.number(), style: z.string().optional(), duration: z.number().default(90) })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 50) throw new Error("Insufficient credits");
-      const videoId = await createVideo({ userId: ctx.user.id, projectId: input.projectId, prompt: `Cinematic trailer, style: ${input.style || "dramatic"}`, duration: input.duration, type: "trailer", status: "generating", creditsUsed: 50 });
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -50, "Trailer generation", "spend");
+      if (!isAdmin && ctx.user.credits < 20) throw new Error("Insufficient credits");
+      const videoId = await createVideo({ userId: ctx.user.id, projectId: input.projectId, prompt: `Cinematic trailer, style: ${input.style || "dramatic"}`, duration: input.duration, type: "trailer", status: "generating", creditsUsed: 20 });
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -20, "Trailer generation", "spend");
       return { videoId, status: "generating" };
     }),
   }),
