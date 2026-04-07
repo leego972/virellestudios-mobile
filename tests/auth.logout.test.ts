@@ -22,6 +22,7 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
     role: "user",
     credits: 100,
     subscriptionTier: "free",
+    subscriptionStatus: "none",
     referralCode: null,
     referredBy: null,
     createdAt: new Date(),
