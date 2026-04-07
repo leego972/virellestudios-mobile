@@ -7,7 +7,7 @@
  * To update: run `pnpm sync-mobile` in the virellestudios repo,
  * then commit the result in virellestudios-mobile.
  *
- * Last generated: 2026-04-06T13:51:51.156Z
+ * Last generated: 2026-04-07T17:27:24.553Z
  */
 
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
@@ -699,6 +699,14 @@ export const CREDIT_COSTS = {
   "influencer_kit_gen": {
     "cost": 5,
     "label": "AI Influencer Kit Generation (press release + social copy)"
+  },
+  "color_grading_ai": {
+    "cost": 4,
+    "label": "AI Color Grading Plan (palette, LUTs, and settings — mobile)"
+  },
+  "mood_board_ai": {
+    "cost": 3,
+    "label": "AI Mood Board Generation (visual concept + color palette — mobile)"
   },
   "sfx_generate_from_text": {
     "cost": 5,
