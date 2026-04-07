@@ -328,6 +328,21 @@ export default function SubscriptionScreen({ projectId }: { projectId?: number }
           );
         })}
 
+        {/* Manage Subscription — shown when user has an active paid plan */}
+        {creditsData?.isActive && creditsData?.tier !== "free" && (
+          <TouchableOpacity
+            style={[styles.manageButton, { borderColor: colors.border }]}
+            onPress={() => {
+              const baseUrl = process.env.EXPO_PUBLIC_APP_URL ?? "https://virellestudios.com";
+              Linking.openURL(`${baseUrl}/settings?tab=billing`);
+            }}
+          >
+            <Text style={[styles.manageButtonText, { color: colors.muted }]}>
+              Manage or cancel subscription →
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Market comparison note */}
         <View style={[styles.comparisonNote, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.comparisonTitle, { color: colors.foreground }]}>Why Virelle?</Text>
@@ -413,6 +428,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ctaText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  manageButton: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  manageButtonText: { fontSize: 14, fontWeight: "500" },
   comparisonNote: {
     borderRadius: 16,
     borderWidth: 1,

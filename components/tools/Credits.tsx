@@ -26,7 +26,30 @@ export default function CreditsScreen({ projectId }: { projectId?: number }) {
         )}
         <View style={[styles.costTable, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.costTitle, { color: colors.foreground }]}>Credit Costs</Text>
-          {[["Director Chat", "2 credits/message"], ["Script Writer", "8 credits"], ["Storyboard Panel", "8 credits"], ["Shot List", "5 credits"], ["Video Generation", "5 credits/second"], ["Trailer", "20 credits"], ["Dialogue Enhancer", "5 credits"], ["Budget Estimator", "5 credits"], ["Continuity Check", "8 credits"], ["Subtitle Generator", "8 credits"]].map(([tool, cost]) => (
+          {[
+            // ── Core tools ─────────────────────────────────────────────────
+            ["Director Chat", "2 credits/msg"],
+            ["Script Writer", "8 credits"],
+            ["Storyboard Panel", "8 credits"],
+            ["Shot List", "5 credits"],
+            ["Video Generation", "5 credits/sec"],
+            ["Trailer", "20 credits"],
+            ["Dialogue Enhancer", "5 credits"],
+            ["Budget Estimator", "5 credits"],
+            ["Continuity Check", "5 credits"],
+            ["Subtitle Generator", "8 credits"],
+            // ── Visual & design tools ───────────────────────────────────────
+            ["Mood Board", "3 credits"],
+            ["Color Grading Plan", "4 credits"],
+            ["Sound Effects", "5 credits"],
+            // ── Post-production ─────────────────────────────────────────────
+            ["ADR Suggestions", "5 credits"],
+            ["Foley Suggestions", "5 credits"],
+            ["Score Cues", "8 credits"],
+            ["Mix Summary Export", "2 credits"],
+            // ── Funding ─────────────────────────────────────────────────────
+            ["Funding Application", "10 credits"],
+          ].map(([tool, cost]) => (
             <View key={tool} style={[styles.costRow, { borderBottomColor: colors.border }]}>
               <Text style={[styles.costTool, { color: colors.foreground }]}>{tool}</Text>
               <Text style={[styles.costAmount, { color: colors.muted }]}>{cost}</Text>

@@ -176,13 +176,13 @@ export const appRouter = router({
   continuity: router({
     check: protectedProcedure.input(z.object({ projectId: z.number(), scriptContent: z.string().optional(), sceneDescriptions: z.array(z.string()).optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 8) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits");
       const content = input.scriptContent || input.sceneDescriptions?.join("\n\n") || "";
       const prompt = `Analyze this film script for continuity errors:\n\n${content}\n\nReturn JSON: {issues: [{type, severity, description, scene}], score: 0-100, recommendations: [string]}. Return only valid JSON.`;
       const result = await generateAIText(prompt);
       let data;
       try { const m = result.match(/\{[\s\S]*\}/); data = m ? JSON.parse(m[0]) : { issues: [], score: 100, recommendations: [] }; } catch { data = { issues: [], score: 100, recommendations: [] }; }
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -8, "Continuity check", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "Continuity check", "spend");
       return data;
     }),
   }),
@@ -220,12 +220,12 @@ export const appRouter = router({
   moodBoard: router({
     generate: protectedProcedure.input(z.object({ projectId: z.number().optional(), prompt: z.string(), mood: z.string().optional(), palette: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 4) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 3) throw new Error("Insufficient credits");
       const prompt = `You are a film production designer. Create a mood board concept for a film scene.\nVisual prompt: ${input.prompt}\nMood: ${input.mood || "Cinematic"}\nColor palette: ${input.palette || "Natural"}\n\nReturn JSON: {"description":"2-3 sentence visual description","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"keywords":["word1","word2","word3"]}. Return only valid JSON.`;
       const result = await generateAIText(prompt);
       let data = { description: result, colors: [], keywords: [] };
       try { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); } catch {}
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -4, "Mood board generation", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -3, "Mood board generation", "spend");
       return data;
     }),
   }),
@@ -246,12 +246,12 @@ export const appRouter = router({
   soundEffect: router({
     suggest: protectedProcedure.input(z.object({ projectId: z.number(), sceneDescription: z.string(), category: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (!isAdmin && ctx.user.credits < 3) throw new Error("Insufficient credits");
+      if (!isAdmin && ctx.user.credits < 5) throw new Error("Insufficient credits");
       const prompt = `You are a professional sound designer. Suggest sound effects for this film scene.\nScene: ${input.sceneDescription}\nCategory focus: ${input.category || "All"}\n\nReturn JSON: {"suggestions":[{"name":"SFX name","category":"category","description":"what it sounds like and when to use it","timing":"e.g. On cut, 2 seconds in","intensity":"Subtle/Moderate/Prominent"}]}. Provide 4-6 suggestions. Return only valid JSON.`;
       const result = await generateAIText(prompt);
       let data = { suggestions: [] };
       try { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); } catch {}
-      if (!isAdmin) await updateUserCredits(ctx.user.id, -3, "Sound effect suggestions", "spend");
+      if (!isAdmin) await updateUserCredits(ctx.user.id, -5, "Sound effect suggestions", "spend");
       return data;
     }),
   }),
@@ -262,7 +262,14 @@ export const appRouter = router({
       const user = await getUserById(ctx.user.id);
       const tier = user?.subscriptionTier || "free";
       const totalCredits = user?.role === "admin" ? -1 : (TIER_MONTHLY_CREDITS[tier] ?? 0);
-      return { credits: user?.role === "admin" ? -1 : (user?.credits || 0), totalCredits, isUnlimited: user?.role === "admin", tier };
+      return {
+        credits: user?.role === "admin" ? -1 : (user?.credits || 0),
+        totalCredits,
+        isUnlimited: user?.role === "admin",
+        tier,
+        subscriptionStatus: (user as any)?.subscriptionStatus ?? "none",
+        isActive: (user as any)?.subscriptionStatus === "active" || (user as any)?.subscriptionStatus === "trialing",
+      };
     }),
   }),
 
