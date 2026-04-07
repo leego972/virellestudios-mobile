@@ -39,8 +39,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 // Bundled fallback — kept in sync with the website's feature-registry.ts
 // This ensures the app works even offline or before the first network fetch.
 const BUNDLED_REGISTRY: FeatureRegistry = {
-  version: 1,
-  updatedAt: "2026-03-17T00:00:00.000Z",
+  version: 2,
+  updatedAt: "2026-04-08T00:00:00.000Z",
   features: [
     { id: "script-writer", label: "Script Writer", icon: "📝", category: "Writing", webPath: "/projects/:projectId/script", description: "AI-generated screenplay from a premise", minTier: "indie", hasNative: true },
     { id: "dialogue", label: "Dialogue Enhancer", icon: "💬", category: "Writing", webPath: "/projects/:projectId/dialogue", description: "Improve character dialogue with AI", minTier: "indie", hasNative: true },
