@@ -14,19 +14,21 @@ import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import { TIER_ORDER } from "@/shared/_core/subscription-constants";
+import { HollywoodIcon } from "@/components/hollywood-badge";
+import type { ToolIconKey } from "@/constants/hollywoodIcons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Quick Action Tools ───────────────────────────────────────────────────────
 // minTier must match the feature registry (hooks/use-feature-registry.ts).
 // voice-acting → sound-effects (independent), film-score → film-post-production (independent)
-const QUICK_TOOLS = [
-  { id: "director-chat",        label: "Director Chat",  icon: "🎬", route: "/(tabs)/chat",               color: "#8B5CF6", minTier: "free"        },
-  { id: "script-writer",        label: "Script Writer",  icon: "📝", route: "/tool/script-writer",        color: "#3B82F6", minTier: "indie"       },
-  { id: "storyboard",           label: "Storyboard",     icon: "🎨", route: "/tool/storyboard",           color: "#F59E0B", minTier: "amateur"     },
-  { id: "video-generation",     label: "Video Gen",      icon: "🎥", route: "/tool/video-generation",     color: "#EF4444", minTier: "amateur"     },
-  { id: "sound-effects",        label: "Sound Effects",  icon: "🎤️", route: "/tool/sound-effects",        color: "#10B981", minTier: "amateur"     },
-  { id: "film-post-production", label: "Film Score",     icon: "🎵", route: "/tool/film-post-production", color: "#EC4899", minTier: "independent" },
+const QUICK_TOOLS: Array<{ id: string; label: string; toolIcon: ToolIconKey; route: string; color: string; minTier: string }> = [
+  { id: "director-chat",        label: "Director Chat",  toolIcon: "director_chat",       route: "/(tabs)/chat",               color: "#8B5CF6", minTier: "free"        },
+  { id: "script-writer",        label: "Script Writer",  toolIcon: "script_writer",       route: "/tool/script-writer",        color: "#3B82F6", minTier: "indie"       },
+  { id: "storyboard",           label: "Storyboard",     toolIcon: "storyboard",          route: "/tool/storyboard",           color: "#F59E0B", minTier: "amateur"     },
+  { id: "video-generation",     label: "Video Gen",      toolIcon: "video_generation",    route: "/tool/video-generation",     color: "#EF4444", minTier: "amateur"     },
+  { id: "sound-effects",        label: "Sound Effects",  toolIcon: "sound_effects",       route: "/tool/sound-effects",        color: "#10B981", minTier: "amateur"     },
+  { id: "film-post-production", label: "Film Score",     toolIcon: "full_film_generator", route: "/tool/film-post-production", color: "#EC4899", minTier: "independent" },
 ];
 
 // ─── Tier display labels used for upgrade alerts ──────────────────────────────
@@ -206,7 +208,7 @@ export default function HomeScreen() {
                     activeOpacity={0.75}
                   >
                     <View style={[styles.quickIconWrap, { backgroundColor: tool.color + "20" }]}>
-                      <Text style={styles.quickIcon}>{tool.icon}</Text>
+                      <HollywoodIcon tool={tool.toolIcon} size={26} />
                     </View>
                     <Text style={[styles.quickLabel, { color: colors.foreground }]}>{tool.label}</Text>
                     {locked && (

@@ -11,6 +11,8 @@ import { useColors } from "@/hooks/use-colors";
 import { useFeatureRegistry, FeatureEntry } from "@/hooks/use-feature-registry";
 import { trpc } from "@/lib/trpc";
 import { TIER_ORDER } from "@/shared/_core/subscription-constants";
+import { HollywoodIcon } from "@/components/hollywood-badge";
+import { FEATURE_ID_TO_TOOL_ICON } from "@/constants/hollywoodIcons";
 
 const TIER_COLORS: Record<string, string> = { free: "#6B7280", indie: "#3B82F6", amateur: "#10B981", independent: "#F59E0B", creator: "#F59E0B", studio: "#F59E0B", industry: "#F59E0B" };
 // Three public tiers: Indie, Creator, Industry. creator/studio are aliases for Industry.
@@ -94,7 +96,11 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
               const locked = !canUseTool(feature.minTier);
               return (
               <TouchableOpacity key={feature.id} style={[styles.toolRow, { backgroundColor: colors.surface, borderColor: colors.border, opacity: locked ? 0.55 : 1 }]} onPress={() => openTool(feature)} activeOpacity={0.7}>
-                <Text style={styles.toolIcon}>{feature.icon}</Text>
+                {FEATURE_ID_TO_TOOL_ICON[feature.id] ? (
+                  <HollywoodIcon tool={FEATURE_ID_TO_TOOL_ICON[feature.id]} size={28} style={{ width: 36 }} />
+                ) : (
+                  <Text style={styles.toolIcon}>{feature.icon}</Text>
+                )}
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.toolLabel, { color: colors.foreground }]}>{feature.label}</Text>

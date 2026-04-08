@@ -72,6 +72,45 @@ export const TOOL_ICON_IMAGES: Record<ToolIconKey, ReturnType<typeof require>> =
   visual_effects:       require("../assets/images/tool-icons/visual_effects.png"),
 };
 
+// ─── Feature registry ID → tool icon key map ───────────────────────────────
+// Used by AllTools screen to show branded icons for every feature entry.
+export const FEATURE_ID_TO_TOOL_ICON: Record<string, ToolIconKey> = {
+  "script-writer":       "script_writer",
+  "dialogue":            "dialogue_enhancer",
+  "scene-builder":       "scene_builder",
+  "director-chat":       "director_chat",
+  "storyboard":          "storyboard",
+  "mood-board":          "mood_board",
+  "color-grading":       "color_grading",
+  "poster-maker":        "poster_maker",
+  "video-generation":    "video_generation",
+  "trailer":             "trailer_studio",
+  "film-generator":      "full_film_generator",
+  "multi-shot":          "multi_shot_sequencer",
+  "tv-commercial":       "content_creator",
+  "shot-list":           "shot_list",
+  "budget":              "budget_estimator",
+  "characters":          "characters",
+  "ai-casting":          "ai_casting",
+  "location-scout":      "location_scout",
+  "live-action-plate":   "visual_effects",
+  "subtitles":           "subtitles",
+  "continuity":          "continuity_checker",
+  "nle-export":          "nle_export",
+  "vfx-suite":           "vfx_suite",
+  "sound-effects":       "sound_effects",
+  "visual-effects":      "visual_effects",
+  "team":                "team_collaboration",
+  "credits-editor":      "credits_editor",
+  "scene-editor":        "scene_builder",
+  "marketplace":         "asset_marketplace",
+  "content-creator":     "content_creator",
+  "subscription":        "subscription_plans",
+  "credits":             "credits",
+  "referrals":           "referrals",
+  "settings":            "settings",
+};
+
 // ─── Nav tab → tool icon key map ─────────────────────────────────────────────
 export const NAV_TAB_ICON_MAP: Record<string, ToolIconKey> = {
   index:    "full_film_generator",
