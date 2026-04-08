@@ -20,7 +20,8 @@ export default function FilmGeneratorScreen({ projectId }: { projectId?: number 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const GENRES = ["Drama", "Thriller", "Comedy", "Horror", "Sci-Fi", "Romance", "Action"];
   const DURATIONS = [15, 30, 60, 90];
-  const cost = duration * 5 + 20;
+  // Matches server tiered formula: ≤15s=5, 16-45s=10, 46-90s=15, >90s=20
+  const cost = duration <= 15 ? 5 : duration <= 45 ? 10 : duration <= 90 ? 15 : 20;
 
   const generateMutation = trpc.videos.generate.useMutation({
     onSuccess: (data) => {
