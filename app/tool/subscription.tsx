@@ -21,6 +21,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/constants/oauth";
+import { HollywoodBadge } from "@/components/hollywood-badge";
+import { SUBSCRIPTION_TIER_TO_BADGE, TierBadgeKey } from "@/constants/hollywoodIcons";
 
 // ─── Tier metadata ────────────────────────────────────────────────────────────
 // Three public tiers: Indie (indie), Creator (amateur), Industry (independent/creator/studio/industry)
@@ -153,7 +155,11 @@ export default function SubscriptionScreen() {
           <View style={[styles.currentPlanCard, { backgroundColor: colors.surface, borderColor: currentMeta.color + "50" }]}>
             <View style={styles.planTopRow}>
               <View style={[styles.planBadge, { backgroundColor: currentMeta.color + "20" }]}>
-                <Text style={styles.planIcon}>{currentMeta.icon}</Text>
+                {SUBSCRIPTION_TIER_TO_BADGE[currentTier] ? (
+                  <HollywoodBadge tier={SUBSCRIPTION_TIER_TO_BADGE[currentTier] as TierBadgeKey} size={28} style={{ marginRight: 6 }} />
+                ) : (
+                  <Text style={styles.planIcon}>{currentMeta.icon}</Text>
+                )}
                 <Text style={[styles.planLabel, { color: currentMeta.color }]}>{currentMeta.label} Plan</Text>
               </View>
               {currentTier !== "free" && (
@@ -246,7 +252,11 @@ export default function SubscriptionScreen() {
                 {/* Tier header */}
                 <View style={styles.tierHeader}>
                   <View style={styles.tierTitleRow}>
-                    <Text style={styles.tierIcon}>{meta.icon}</Text>
+                    {SUBSCRIPTION_TIER_TO_BADGE[tierId] ? (
+                      <HollywoodBadge tier={SUBSCRIPTION_TIER_TO_BADGE[tierId] as TierBadgeKey} size={32} style={{ marginRight: 6 }} />
+                    ) : (
+                      <Text style={styles.tierIcon}>{meta.icon}</Text>
+                    )}
                     <Text style={[styles.tierName, { color: colors.foreground }]}>{meta.label}</Text>
                     {isCurrent && (
                       <View style={[styles.currentBadge, { backgroundColor: meta.color + "20" }]}>

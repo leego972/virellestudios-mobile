@@ -1,30 +1,34 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Platform, View, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/use-colors";
+import { HollywoodIcon } from "@/components/hollywood-badge";
+import type { ToolIconKey } from "@/constants/hollywoodIcons";
 
 /**
- * Custom tab bar icon wrapper that adds a subtle active indicator dot
- * beneath the icon when the tab is focused.
+ * Custom tab bar icon wrapper using Hollywood branded tool icons.
+ * Adds a subtle active indicator dot beneath the icon when focused.
  */
 function TabIcon({
-  name,
-  color,
+  tool,
   focused,
-  size = 24,
+  size = 26,
 }: {
-  name: React.ComponentProps<typeof IconSymbol>["name"];
-  color: string;
+  tool: ToolIconKey;
   focused: boolean;
   size?: number;
 }) {
+  const colors = useColors();
   return (
     <View style={styles.tabIconContainer}>
-      <IconSymbol size={size} name={name} color={color} />
+      <HollywoodIcon
+        tool={tool}
+        size={size}
+        style={{ opacity: focused ? 1 : 0.45 }}
+      />
       {focused && (
-        <View style={[styles.activeIndicator, { backgroundColor: color }]} />
+        <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
       )}
     </View>
   );
@@ -50,7 +54,6 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 0.5,
-          // Subtle shadow for depth
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.06,
@@ -69,8 +72,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="house.fill" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon tool="full_film_generator" focused={focused} />
           ),
         }}
       />
@@ -78,8 +81,8 @@ export default function TabLayout() {
         name="projects"
         options={{
           title: "Projects",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="folder.fill" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon tool="scene_builder" focused={focused} />
           ),
         }}
       />
@@ -87,8 +90,8 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "Director",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="message.fill" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon tool="director_chat" focused={focused} />
           ),
         }}
       />
@@ -96,8 +99,8 @@ export default function TabLayout() {
         name="movies"
         options={{
           title: "Movies",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="play.rectangle.fill" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon tool="video_generation" focused={focused} />
           ),
         }}
       />
@@ -105,8 +108,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="person.fill" color={color} focused={focused} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon tool="settings" focused={focused} />
           ),
         }}
       />

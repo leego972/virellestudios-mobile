@@ -110,7 +110,10 @@ export const appRouter = router({
     projectVideos: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ input }) => getProjectVideos(input.projectId)),
     generate: protectedProcedure.input(z.object({ prompt: z.string(), duration: z.number().default(4), projectId: z.number().optional(), sceneId: z.number().optional(), type: z.enum(["clip","trailer","film"]).default("clip") })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      const creditCost = input.duration * 5;
+      // Duration-scaled credit cost — matches web getVideoCredits() formula:
+      // ≤15s=5, 16-45s=10, 46-90s=15, >90s=20
+      const d = input.duration;
+      const creditCost = d <= 15 ? 5 : d <= 45 ? 10 : d <= 90 ? 15 : 20;
       if (!isAdmin && ctx.user.credits < creditCost) throw new Error("Insufficient credits");
       const videoId = await createVideo({ userId: ctx.user.id, projectId: input.projectId, sceneId: input.sceneId, prompt: input.prompt, duration: input.duration, type: input.type, status: "generating", creditsUsed: creditCost });
       if (!isAdmin) await updateUserCredits(ctx.user.id, -creditCost, `Video generation (${input.duration}s)`, "spend");
@@ -286,7 +289,8 @@ export const appRouter = router({
   film: router({
     generate: protectedProcedure.input(z.object({ projectId: z.number(), quality: z.enum(["draft","standard","high"]).default("standard") })).mutation(async ({ ctx, input }) => {
       const isAdmin = ctx.user.role === "admin";
-      const creditCost = input.quality === "high" ? 200 : input.quality === "standard" ? 100 : 50;
+      // Matches web CREDIT_COSTS.generate_film = 10 credits (full pipeline)
+      const creditCost = 10;
       if (!isAdmin && ctx.user.credits < creditCost) throw new Error("Insufficient credits");
       const videoId = await createVideo({ userId: ctx.user.id, projectId: input.projectId, prompt: `Full film, quality: ${input.quality}`, type: "film", status: "generating", creditsUsed: creditCost });
       if (!isAdmin) await updateUserCredits(ctx.user.id, -creditCost, "Film generation", "spend");

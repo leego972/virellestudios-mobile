@@ -17,6 +17,8 @@ import {
   TIER_MONTHLY_CREDITS,
   TIER_PRICING,
 } from "@/shared/_core/subscription-constants";
+import { HollywoodBadge } from "@/components/hollywood-badge";
+import { SUBSCRIPTION_TIER_TO_BADGE, TierBadgeKey } from "@/constants/hollywoodIcons";
 
 // Tier colour map — visual only, not in shared constants
 const TIER_COLORS: Record<string, string> = {
@@ -110,9 +112,14 @@ export default function ProfileScreen() {
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Subscription</Text>
             <View style={[styles.subscriptionCard, { backgroundColor: colors.surface, borderColor: currentTierColor }]}>
               <View style={styles.subscriptionHeader}>
-                <View>
-                  <Text style={[styles.tierName, { color: currentTierColor }]}>{currentTierName}</Text>
-                  <Text style={[styles.tierPrice, { color: colors.foreground }]}>{getTierPrice(currentTierId)}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  {SUBSCRIPTION_TIER_TO_BADGE[currentTierId] && (
+                    <HollywoodBadge tier={SUBSCRIPTION_TIER_TO_BADGE[currentTierId] as TierBadgeKey} size={40} />
+                  )}
+                  <View>
+                    <Text style={[styles.tierName, { color: currentTierColor }]}>{currentTierName}</Text>
+                    <Text style={[styles.tierPrice, { color: colors.foreground }]}>{getTierPrice(currentTierId)}</Text>
+                  </View>
                 </View>
                 <View style={styles.creditsDisplay}>
                   <Text style={[styles.creditsValue, { color: colors.primary }]}>
