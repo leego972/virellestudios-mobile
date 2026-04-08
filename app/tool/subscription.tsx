@@ -115,7 +115,7 @@ export default function SubscriptionScreen() {
     setLoadingTopup(packId);
     try {
       const baseUrl = getApiBaseUrl().replace("/api", "");
-      const url = `${baseUrl}/billing/topup?pack=${packId}&source=mobile`;
+      const url = `${baseUrl}/pricing?pack=${packId}&source=mobile`;
       await Linking.openURL(url);
     } catch (err) {
       Alert.alert("Error", "Failed to open top-up page.");
@@ -128,7 +128,7 @@ export default function SubscriptionScreen() {
   const handleManageBilling = async () => {
     try {
       const baseUrl = getApiBaseUrl().replace("/api", "");
-      await Linking.openURL(`${baseUrl}/billing?source=mobile`);
+      await Linking.openURL(`${baseUrl}/billing/portal?source=mobile`);
     } catch {
       Alert.alert("Error", "Failed to open billing portal.");
     }
