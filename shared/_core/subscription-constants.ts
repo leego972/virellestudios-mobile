@@ -7,12 +7,13 @@
  * To update: run `pnpm sync-mobile` in the virellestudios repo,
  * then commit the result in virellestudios-mobile.
  *
- * Last generated: 2026-04-06T13:51:51.156Z
+ * Last generated: 2026-05-23T08:53:06.707Z
  */
 
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
 
 export const TIER_DISPLAY_NAMES: Record<string, string> = {
+  "free": "Free",
   "indie": "Indie",
   "amateur": "Creator",
   "independent": "Industry",
@@ -164,6 +165,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": false,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": false,
+    "canUseCrowdfunding": false,
     "resolution": "720p",
     "quality": [
       "standard"
@@ -223,6 +225,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": false,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": false,
+    "canUseCrowdfunding": true,
     "resolution": "720p",
     "quality": [
       "standard"
@@ -282,6 +285,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": false,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": false,
+    "canUseCrowdfunding": true,
     "resolution": "1080p",
     "quality": [
       "standard",
@@ -342,6 +346,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": false,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": true,
+    "canUseCrowdfunding": true,
     "resolution": "4k",
     "quality": [
       "standard",
@@ -403,6 +408,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": false,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": true,
+    "canUseCrowdfunding": true,
     "resolution": "4k",
     "quality": [
       "standard",
@@ -464,6 +470,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": true,
     "canUseCustomFineTuning": false,
     "canUsePriorityRendering": true,
+    "canUseCrowdfunding": true,
     "resolution": "4k",
     "quality": [
       "standard",
@@ -525,6 +532,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": true,
     "canUseCustomFineTuning": true,
     "canUsePriorityRendering": true,
+    "canUseCrowdfunding": true,
     "resolution": "4k",
     "quality": [
       "standard",
@@ -586,6 +594,7 @@ export const TIER_LIMITS = {
     "canUseAPIAccess": true,
     "canUseCustomFineTuning": true,
     "canUsePriorityRendering": true,
+    "canUseCrowdfunding": true,
     "resolution": "4k",
     "quality": [
       "standard",
@@ -676,6 +685,10 @@ export const CREDIT_COSTS = {
     "cost": 20,
     "label": "Trailer Generation (4–6 video clips, ~2 min cinematic)"
   },
+  "recap_render": {
+    "cost": 20,
+    "label": "Render Auto Recap MP4 (cut + concat + upload final video)"
+  },
   "ad_poster_gen": {
     "cost": 5,
     "label": "Ad/Poster Image Generation (DALL-E 3 HD)"
@@ -699,6 +712,14 @@ export const CREDIT_COSTS = {
   "influencer_kit_gen": {
     "cost": 5,
     "label": "AI Influencer Kit Generation (press release + social copy)"
+  },
+  "color_grading_ai": {
+    "cost": 4,
+    "label": "AI Color Grading Plan (palette, LUTs, and settings — mobile)"
+  },
+  "mood_board_ai": {
+    "cost": 3,
+    "label": "AI Mood Board Generation (visual concept + color palette — mobile)"
   },
   "sfx_generate_from_text": {
     "cost": 5,
@@ -743,6 +764,22 @@ export const CREDIT_COSTS = {
   "movie_export": {
     "cost": 5,
     "label": "Movie Export (scenes/trailer export)"
+  },
+  "script_coverage_ai": {
+    "cost": 5,
+    "label": "AI Script Coverage (logline, scores, reader notes — BYOK)"
+  },
+  "crowdfund_campaign_launch": {
+    "cost": 0,
+    "label": "Launch Crowdfunding Campaign (FREE — tier-gated, no credit fee)"
+  },
+  "crowdfund_ai_copy": {
+    "cost": 3,
+    "label": "AI Crowdfunding Copy (tagline + pitch description via Director AI)"
+  },
+  "crowdfund_reward_gen": {
+    "cost": 2,
+    "label": "AI Reward Tier Suggestions (4 tiered reward ideas for campaign)"
   }
 } as const;
 
