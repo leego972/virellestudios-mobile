@@ -7,7 +7,7 @@
  * To update: run `pnpm sync-mobile` in the virellestudios repo,
  * then commit the result in virellestudios-mobile.
  *
- * Last generated: 2026-05-23T08:53:06.707Z
+ * Last generated: 2026-05-23T09:58:53.377Z
  */
 
 export type SubscriptionTier = "indie" | "amateur" | "independent" | "creator" | "studio" | "industry" | "beta";
