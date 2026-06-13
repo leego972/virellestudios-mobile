@@ -2,12 +2,15 @@ import { ThemedView } from "@/components/themed-view";
 import * as Api from "@/lib/_core/api";
 import * as Auth from "@/lib/_core/auth";
 import * as Linking from "expo-linking";
+  import { VideoView, useVideoPlayer } from "expo-video";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function OAuthCallback() {
+const OPENER_URL = "https://virellestudios.com/virelle-opener.mp4";
+
+  export default function OAuthCallback() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     code?: string;
@@ -18,6 +21,22 @@ export default function OAuthCallback() {
   }>();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // Studio Opener: plays full-screen on successful auth, then navigates home
+    const openerPlayer = useVideoPlayer(null, (player) => {
+      player.loop = false;
+      player.muted = false;
+    });
+
+    useEffect(() => {
+      if (status !== "success") return;
+      openerPlayer.replace({ uri: OPENER_URL });
+      openerPlayer.play();
+      const listener = openerPlayer.addListener("playToEnd", () => {
+        router.replace("/(tabs)");
+      });
+      return () => { listener.remove(); };
+    }, [status]);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -61,11 +80,6 @@ export default function OAuthCallback() {
 
           setStatus("success");
           console.log("[OAuth] Web authentication successful, redirecting to home...");
-          setTimeout(() => {
-            router.replace("/(tabs)");
-          }, 1000);
-          return;
-        }
 
         // Get URL from params or Linking
         let url: string | null = null;
@@ -158,11 +172,6 @@ export default function OAuthCallback() {
           // No need to fetch from API
           setStatus("success");
           console.log("[OAuth] Redirecting to home...");
-          setTimeout(() => {
-            router.replace("/(tabs)");
-          }, 1000);
-          return;
-        }
 
         // Otherwise, exchange code for session token
         if (!code || !state) {
@@ -212,14 +221,6 @@ export default function OAuthCallback() {
           setStatus("success");
           console.log("[OAuth] Authentication successful, redirecting to home...");
 
-          // Redirect to home after a short delay
-          setTimeout(() => {
-            console.log("[OAuth] Executing redirect...");
-            router.replace("/(tabs)");
-          }, 1000);
-        } else {
-          console.error("[OAuth] No session token in result:", result);
-          setStatus("error");
           setErrorMessage("No session token received");
         }
       } catch (error) {
@@ -269,3 +270,11 @@ export default function OAuthCallback() {
     </SafeAreaView>
   );
 }
+
+  const styles = StyleSheet.create({
+    openerContainer: { flex: 1, backgroundColor: "#000" },
+    openerVideo: { flex: 1 },
+    openerSkip: { position: "absolute", bottom: 40, right: 24, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
+    openerSkipText: { color: "#fff", fontSize: 14, fontWeight: "600", letterSpacing: 0.5 },
+  });
+  
