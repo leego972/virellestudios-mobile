@@ -15,6 +15,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import CinemaPlayer from "@/components/cinema-player";
+import { VideoView, useVideoPlayer } from "expo-video";
 
 const STATUS_ICONS: Record<string, string> = {
   generating: "⏳",
@@ -29,6 +30,9 @@ const TYPE_LABELS: Record<string, string> = {
   film: "Full Film",
   scene: "Scene",
 };
+
+
+const OPENER_URL = "https://virellestudios.com/virelle-opener.mp4";
 
 type VideoItem = {
   id: number;
@@ -50,8 +54,28 @@ export default function MoviesScreen() {
   const { data: scenes, isLoading: loadingScenes } = trpc.scenes.allWithVideo.useQuery();
 
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
+  const [pendingVideo, setPendingVideo] = useState<VideoItem | null>(null);
 
   const isLoading = loadingVideos || loadingScenes;
+
+    // Studio Opener: idle player, activated when a complete video is queued
+    const openerPlayer = useVideoPlayer(null, (player) => {
+      player.loop = false;
+      player.muted = false;
+    });
+
+    useEffect(() => {
+      if (!pendingVideo) return;
+      openerPlayer.replace({ uri: OPENER_URL });
+      openerPlayer.play();
+      const listener = openerPlayer.addListener("playToEnd", () => {
+        const video = pendingVideo;
+        setPendingVideo(null);
+        setSelectedVideo(video);
+      });
+      return () => { listener.remove(); };
+    }, [pendingVideo]);
+  
 
   // Scenes that have a ready video
   const sceneVideos: VideoItem[] = ((scenes as any[] | undefined) ?? [])
@@ -84,7 +108,12 @@ export default function MoviesScreen() {
 
   const openPlayer = (item: VideoItem) => {
     if (item.status === "ready" && item.videoUrl) {
-      setSelectedVideo(item);
+      const isCompleteVideo = item.type === "film" || item.type === "trailer" || item.type === "clip";
+      if (isCompleteVideo) {
+        setPendingVideo(item);
+      } else {
+        setSelectedVideo(item);
+      }
     }
   };
 
@@ -196,6 +225,32 @@ export default function MoviesScreen() {
         />
       )}
 
+      {/* Studio Opener — plays before complete videos (film, trailer, clip) */}
+      {pendingVideo && (
+        <Modal
+          visible={true}
+          animationType="fade"
+          presentationStyle="fullScreen"
+          onRequestClose={() => { const v = pendingVideo; setPendingVideo(null); setSelectedVideo(v); }}
+        >
+          <View style={styles.openerContainer}>
+            <VideoView
+              player={openerPlayer}
+              style={styles.openerVideo}
+              contentFit="cover"
+              nativeControls={false}
+              allowsFullscreen={false}
+            />
+            <TouchableOpacity
+              style={styles.openerSkip}
+              onPress={() => { const v = pendingVideo; setPendingVideo(null); setSelectedVideo(v); }}
+            >
+              <Text style={styles.openerSkipText}>Skip ›</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
+
       {/* CinemaPlayer Modal */}
       {selectedVideo && selectedVideo.videoUrl && (
         <Modal
@@ -249,4 +304,8 @@ const styles = StyleSheet.create({
   duration: { fontSize: 12 },
   status: { fontSize: 12 },
   subtitle: { fontSize: 12 },
+  openerContainer: { flex: 1, backgroundColor: "#000" },
+  openerVideo: { flex: 1 },
+  openerSkip: { position: "absolute", bottom: 40, right: 24, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
+  openerSkipText: { color: "#fff", fontSize: 14, fontWeight: "600", letterSpacing: 0.5 },
 });
