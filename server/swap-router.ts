@@ -79,7 +79,7 @@ import { router, publicProcedure } from "./_core/trpc";
     const putResp = await fetch(upload_url, {
       method: "PUT",
       headers: { "Content-Type": mimeType },
-      body: buffer,
+      body: new Uint8Array(buffer),
     });
     if (!putResp.ok) throw new Error(`fal storage put: ${putResp.status}`);
     return file_url;
