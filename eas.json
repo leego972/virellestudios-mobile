@@ -33,11 +33,9 @@
         "APP_VARIANT": "swappys"
       },
       "ios": {
-        "bundleIdentifier": "com.virellestudios.swappys",
         "credentialsSource": "remote"
       },
       "android": {
-        "applicationId": "com.virellestudios.swappys",
         "buildType": "app-bundle"
       }
     },
@@ -47,7 +45,6 @@
         "APP_VARIANT": "swappys"
       },
       "android": {
-        "applicationId": "com.virellestudios.swappys",
         "buildType": "apk"
       }
     }
