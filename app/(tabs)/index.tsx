@@ -16,6 +16,8 @@ import { trpc } from "@/lib/trpc";
 import { TIER_ORDER } from "@/shared/_core/subscription-constants";
 import { HollywoodIcon } from "@/components/hollywood-badge";
 import type { ToolIconKey } from "@/constants/hollywoodIcons";
+import Constants from "expo-constants";
+import { BodyFaceSwap } from "@/components/tools/BodyFaceSwap";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -65,6 +67,8 @@ const TIER_LABELS: Record<string, { name: string; color: string }> = {
   // Legacy aliases
   beginner:    { name: "Indie",    color: "#10B981" },
 };
+
+const IS_SWAPPYS = (Constants.expoConfig?.extra as any)?.appVariant === "swappys";
 
 export default function HomeScreen() {
   const colors = useColors();
