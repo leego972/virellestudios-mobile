@@ -39,8 +39,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 // Bundled fallback — kept in sync with the website's feature-registry.ts
 // This ensures the app works even offline or before the first network fetch.
 const BUNDLED_REGISTRY: FeatureRegistry = {
-  version: 2,
-  updatedAt: "2026-04-08T00:00:00.000Z",
+  version: 3,
+  updatedAt: "2026-07-03T00:00:00.000Z",
   features: [
     { id: "script-writer", label: "Script Writer", icon: "📝", category: "Writing", webPath: "/projects/:projectId/script", description: "AI-generated screenplay from a premise", minTier: "indie", hasNative: true },
     { id: "dialogue", label: "Dialogue Enhancer", icon: "💬", category: "Writing", webPath: "/projects/:projectId/dialogue", description: "Improve character dialogue with AI", minTier: "indie", hasNative: true },
@@ -76,8 +76,16 @@ const BUNDLED_REGISTRY: FeatureRegistry = {
     { id: "credits", label: "Credits", icon: "💳", category: "Account", webPath: "/credits", description: "View balance and transaction history", minTier: "free", hasNative: true },
     { id: "referrals", label: "Referral Program", icon: "🎁", category: "Account", webPath: "/referrals", description: "Earn credits by referring friends", minTier: "free", hasNative: true },
     { id: "settings", label: "Settings", icon: "⚙️", category: "Account", webPath: "/settings", description: "Account and app settings", minTier: "free", hasNative: false },
-  ],
-  byCategory: {},
+      // Tools synced from website registry 2026-07-03
+      { id: "script-breakdown", label: "Script Breakdown", icon: "📑", category: "Writing", webPath: "/projects/:projectId/script-breakdown", description: "Analyze a script and approve scenes", minTier: "amateur", hasNative: false, isNew: true },
+      { id: "continuity-readiness", label: "Continuity Readiness", icon: "✅", category: "Post-Production", webPath: "/projects/:projectId/command-center", description: "Pre-flight check before generating video", minTier: "indie", hasNative: false, isNew: true },
+      { id: "auto-recap", label: "Auto Recap", icon: "⏮️", category: "Post-Production", webPath: "/projects/:id/auto-recap", description: "Generate episode recaps automatically", minTier: "amateur", hasNative: false, isNew: true },
+      { id: "project-command-center", label: "Command Center", icon: "🧭", category: "Production", webPath: "/projects/:id/command-center", description: "See what your film needs next at a glance", minTier: "amateur", hasNative: false, isNew: true },
+      { id: "byok-control-center", label: "BYOK Control Center", icon: "🔑", category: "Account", webPath: "/settings/byok", description: "Manage your own AI provider keys", minTier: "free", hasNative: false, isNew: true },
+      { id: "pitch-deck", label: "Pitch Deck", icon: "🎯", category: "Production", webPath: "/projects/:projectId/pitch-deck", description: "Print-ready pitch deck for funders", minTier: "independent", hasNative: false, isNew: true },
+      { id: "awaiting-review", label: "Awaiting Review", icon: "👀", category: "Production", webPath: "/awaiting-review", description: "All scenes ready for your review", minTier: "free", hasNative: false, isNew: true },
+    ],
+    byCategory: {},
 };
 
 // Pre-build the byCategory map on the bundled registry
