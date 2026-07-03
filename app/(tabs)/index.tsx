@@ -132,6 +132,21 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
+            {/* ── Swappys Identity Banner ──────────────────────────────────── */}
+            <View style={[styles.swappysBanner, { backgroundColor: colors.surface, borderColor: "#d4af3740" }]}>
+              <Text style={styles.swappysLogo}>✦</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.swappysTitle, { color: "#d4af37" }]}>Swappys Mobile</Text>
+                <Text style={[styles.swappysSubtitle, { color: colors.muted }]}>Free entry into Hollywood AI filmmaking</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.virelleBadge, { backgroundColor: "#d4af3715", borderColor: "#d4af3740" }]}
+                onPress={() => router.push("/tool/subscription" as never)}
+              >
+                <Text style={[styles.virelleLabel, { color: "#d4af37" }]}>Upgrade to Virelle ›</Text>
+              </TouchableOpacity>
+            </View>
+  
 
           {/* ── Credits & Plan Card ────────────────────────────────────────── */}
           <View style={[styles.creditsCard, { backgroundColor: colors.surface, borderColor: tier.color + "40" }]}>
