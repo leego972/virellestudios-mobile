@@ -16,6 +16,7 @@ import React, { useState, useEffect, useCallback } from "react";
   import * as ImagePicker from "expo-image-picker";
   import { trpc } from "@/lib/trpc";
   import { useAuth } from "@/hooks/use-auth";
+import { useCredits } from "@/hooks/use-credits";
   import { useRouter } from "expo-router";
   import { SwappysWatermark } from "@/components/swappys-watermark";
 
@@ -401,6 +402,7 @@ import React, { useState, useEffect, useCallback } from "react";
   // ─────────────────────────────────────────────────────────────────────────────
   export function BodyFaceSwap() {
     const { user } = useAuth();
+  const { canAfford } = useCredits();
     const router = useRouter();
     const isCreator = user ? CREATOR_TIERS.has((user as any).subscriptionTier ?? "") : false;
 
@@ -928,4 +930,6 @@ import React, { useState, useEffect, useCallback } from "react";
       marginTop: -8,
     },
   });
-  
+ const creditCost = CREATOR_TIERS.has(user?.subscriptionTier ?? "") ? 5 : 2;
+    if (!canAfford(creditCost, "Face/Body Swap")) return;
+     
