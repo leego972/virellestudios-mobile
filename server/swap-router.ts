@@ -1,7 +1,8 @@
-import { router, publicProcedure } from "./_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "./_core/trpc";
   import { z } from "zod";
   import { TRPCError } from "@trpc/server";
   import { storagePut } from "./storage";
+import { updateUserCredits } from "./db.js";
 
   const CREATOR_TIERS = new Set(["amateur", "independent", "creator", "studio", "industry", "beta"]);
 
@@ -159,7 +160,7 @@ import { router, publicProcedure } from "./_core/trpc";
 
   // ── Router ────────────────────────────────────────────────────────────────────
   export const swapRouter = router({
-    bodyFaceSwap: publicProcedure
+    bodyFaceSwap: protectedProcedure
       .input(
         z.object({
           sourceImageBase64: z.string().max(8 * 1024 * 1024),
@@ -171,11 +172,19 @@ import { router, publicProcedure } from "./_core/trpc";
         const isCreator =
           ctx.user != null && CREATOR_TIERS.has((ctx.user as any).subscriptionTier ?? "");
 
+        const isAdmin = ctx.user.role === "admin";
+        const creditCost = isCreator && falKey ? 5 : 2;
+        if (!isAdmin && ctx.user.credits < creditCost) {
+          throw new TRPCError({ code: "FORBIDDEN", message: `Insufficient credits — this swap costs ${creditCost} credits.` });
+        }
         const imageUrl =
           isCreator && falKey
             ? await swapWithFal(input.sourceImageBase64, input.targetImageBase64, falKey)
             : await swapWithPollinations(input.sourceImageBase64, input.targetImageBase64);
 
+        if (!isAdmin) {
+          await updateUserCredits(ctx.user.id, -creditCost, `Face/body swap (${isCreator && falKey ? "Creator" : "free"})`, "spend");
+        }
         return {
           imageUrl,
           hasWatermark: !isCreator,
