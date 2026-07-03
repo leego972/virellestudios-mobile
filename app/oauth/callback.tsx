@@ -80,6 +80,8 @@ const OPENER_URL = "https://virellestudios.com/virelle-opener.mp4";
 
           setStatus("success");
           console.log("[OAuth] Web authentication successful, redirecting to home...");
+          return;
+        }
 
         // Get URL from params or Linking
         let url: string | null = null;
@@ -172,6 +174,8 @@ const OPENER_URL = "https://virellestudios.com/virelle-opener.mp4";
           // No need to fetch from API
           setStatus("success");
           console.log("[OAuth] Redirecting to home...");
+          return;
+        }
 
         // Otherwise, exchange code for session token
         if (!code || !state) {
@@ -220,7 +224,8 @@ const OPENER_URL = "https://virellestudios.com/virelle-opener.mp4";
 
           setStatus("success");
           console.log("[OAuth] Authentication successful, redirecting to home...");
-
+        } else {
+          setStatus("error");
           setErrorMessage("No session token received");
         }
       } catch (error) {
