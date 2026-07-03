@@ -2,6 +2,8 @@
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
+const IS_SWAPPYS = process.env.APP_VARIANT === "swappys";
+
 // Bundle ID format: space.manus.<project_name_dots>.<timestamp>
 // e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
 // Bundle ID can only contain letters, numbers, and dots
@@ -27,15 +29,14 @@ const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
-  // App branding - update these values directly (do not use env vars)
-  appName: "Virelle Studios",
-  appSlug: "virellestudios-mobile",
-  // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663446819082/CAkcwNccSUcizneMbEWnnU/icon_de3695d5.png",
-  scheme: schemeFromBundleId,
-  iosBundleId: bundleId,
-  androidPackage: bundleId,
+  appName: IS_SWAPPYS ? "Swappys" : "Virelle Studios",
+  appSlug: IS_SWAPPYS ? "swappys" : "virellestudios-mobile",
+  logoUrl: IS_SWAPPYS
+    ? ""
+    : "https://d2xsxph8kpxj0f.cloudfront.net/310519663446819082/CAkcwNccSUcizneMbEWnnU/icon_de3695d5.png",
+  scheme: IS_SWAPPYS ? "swappys" : schemeFromBundleId,
+  iosBundleId: IS_SWAPPYS ? "com.virellestudios.swappys" : bundleId,
+  androidPackage: IS_SWAPPYS ? "com.virellestudios.swappys" : bundleId,
 };
 
 const config: ExpoConfig = {
@@ -146,9 +147,8 @@ const config: ExpoConfig = {
     reactCompiler: true,
   },
   extra: {
-    eas: {
-      projectId: "b80d389f-d641-4b29-94b6-85c8d6011b55",
-    },
+    eas: { projectId: "b80d389f-d641-4b29-94b6-85c8d6011b55" },
+    appVariant: IS_SWAPPYS ? "swappys" : "virelle",
   },
 };
 
