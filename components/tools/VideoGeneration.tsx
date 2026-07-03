@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Modal } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Modal, Image } from "react-native";
 import { useState, useEffect, useRef } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -7,6 +8,7 @@ import { useCredits } from "@/hooks/use-credits";
 import { CreditBadge } from "@/components/credit-badge";
 import { trpc } from "@/lib/trpc";
 import CinemaPlayer from "@/components/cinema-player";
+import { SwappysWatermark } from "@/components/swappys-watermark";
 
 const DURATIONS = [4, 8, 16, 30];
 const CREDIT_COST_PER_SEC = 5;
@@ -19,6 +21,7 @@ export default function VideoGenerationScreen({ projectId }: { projectId?: numbe
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(4);
   const [type, setType] = useState<"clip" | "trailer" | "film">("clip");
+    const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [generatedVideoId, setGeneratedVideoId] = useState<number | null>(null);
   const [playerVideo, setPlayerVideo] = useState<{ videoUrl: string; prompt: string; duration: number } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -59,7 +62,14 @@ export default function VideoGenerationScreen({ projectId }: { projectId?: numbe
 
   const isPolling = !!generatedVideoId && !playerVideo;
 
-  const handleGenerate = () => {
+  const pickSourceImage = async () => {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== "granted") { Alert.alert("Permission needed", "Allow photo library access to pick a source image."); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, allowsEditing: true });
+      if (!result.canceled && result.assets[0]) setSourceImage(result.assets[0].uri);
+    };
+
+    const handleGenerate = () => {
     if (!prompt.trim()) { Alert.alert("Required", "Enter a video prompt."); return; }
     if (!canAfford(cost, "Video Generation")) return;
     setPlayerVideo(null);
@@ -111,7 +121,18 @@ export default function VideoGenerationScreen({ projectId }: { projectId?: numbe
           </View>
         </View>
 
-        <View style={[styles.costBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* Source Image */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: colors.muted }]}>Source Image — image-to-video (optional)</Text>
+            <TouchableOpacity style={[styles.uploadBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickSourceImage}>
+              {sourceImage
+                ? <Image source={{ uri: sourceImage }} style={styles.refThumb} resizeMode="cover" />
+                : <View style={styles.uploadPlaceholder}><Text style={styles.uploadIcon}>🎞️</Text><Text style={[styles.uploadText, { color: colors.muted }]}>Tap to pick a source image</Text></View>}
+            </TouchableOpacity>
+            {sourceImage && <TouchableOpacity onPress={() => setSourceImage(null)}><Text style={[styles.clearBtn, { color: colors.muted }]}>✕ Remove</Text></TouchableOpacity>}
+          </View>
+
+          <View style={[styles.costBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.costText, { color: colors.muted }]}>💳 Cost: <Text style={{ color: colors.primary, fontWeight: "700" }}>{cost} credits</Text> ({duration}s × {CREDIT_COST_PER_SEC} credits/s)</Text>
         </View>
 
@@ -139,9 +160,17 @@ export default function VideoGenerationScreen({ projectId }: { projectId?: numbe
         >
           {generateMutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Generate Video · {cost} credits</Text>}
         </TouchableOpacity>
-      </ScrollView>
+        <TouchableOpacity style={[styles.upgradeCard, { borderColor: "#d4af3760" }]} onPress={() => router.push("/tool/subscription" as never)}>
+            <Text style={styles.upgradeIcon}>⭐</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.upgradeTitle, { color: "#d4af37" }]}>Upgrade to Virelle Studios</Text>
+              <Text style={[styles.upgradeDesc, { color: colors.muted }]}>Remove watermark · Unlock BYOK · Unlimited exports</Text>
+            </View>
+            <Text style={{ color: "#d4af37", fontSize: 16 }}>›</Text>
+          </TouchableOpacity>
+        </ScrollView>
 
-      {playerVideo && (
+        {playerVideo && (
         <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setPlayerVideo(null)}>
           <CinemaPlayer
             source={{ uri: playerVideo.videoUrl }}
@@ -173,5 +202,10 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 14, fontWeight: "600" },
   resultMeta: { fontSize: 12, marginTop: 2 },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center" },
-  btnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});
+    btnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+    uploadBtn: { borderRadius: 12, borderWidth: 1, borderStyle: "dashed", overflow: "hidden", height: 120, justifyContent: "center", alignItems: "center" },
+    uploadPlaceholder: { alignItems: "center", gap: 8 }, uploadIcon: { fontSize: 28 }, uploadText: { fontSize: 13 },
+    refThumb: { width: "100%", height: 120 }, clearBtn: { fontSize: 12, textAlign: "right", marginTop: 4 },
+    upgradeCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderWidth: 1, padding: 14, backgroundColor: "rgba(212,175,55,0.06)" },
+    upgradeIcon: { fontSize: 22 }, upgradeTitle: { fontSize: 14, fontWeight: "700" }, upgradeDesc: { fontSize: 12, marginTop: 2 },
+  });
