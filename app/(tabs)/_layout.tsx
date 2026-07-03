@@ -5,6 +5,10 @@ import { Platform, View, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/use-colors";
 import { HollywoodIcon } from "@/components/hollywood-badge";
 import type { ToolIconKey } from "@/constants/hollywoodIcons";
+  import Constants from "expo-constants";
+
+  const IS_SWAPPYS = Constants.expoConfig?.extra?.isSwappys === true ||
+    Constants.expoConfig?.slug === "swappys";
 
 /**
  * Custom tab bar icon wrapper using Hollywood branded tool icons.
@@ -80,6 +84,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="projects"
         options={{
+          href: IS_SWAPPYS ? null : undefined,
           title: "Projects",
           tabBarIcon: ({ focused }) => (
             <TabIcon tool="scene_builder" focused={focused} />
@@ -89,6 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
+          href: IS_SWAPPYS ? null : undefined,
           title: "Director",
           tabBarIcon: ({ focused }) => (
             <TabIcon tool="director_chat" focused={focused} />
@@ -98,6 +104,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="movies"
         options={{
+          href: IS_SWAPPYS ? null : undefined,
           title: "Movies",
           tabBarIcon: ({ focused }) => (
             <TabIcon tool="video_generation" focused={focused} />
