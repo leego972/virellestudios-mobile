@@ -480,4 +480,11 @@ const styles = StyleSheet.create({
   allToolsTitle: { fontSize: 15, fontWeight: "700" },
   allToolsSubtitle: { fontSize: 12, marginTop: 3 },
   allToolsArrow: { fontSize: 22 },
-});
+
+    swappysBanner: { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 16, gap: 12, marginBottom: 4 },
+    swappysLogo: { fontSize: 28 },
+    swappysTitle: { fontSize: 16, fontWeight: "800" },
+    swappysSubtitle: { fontSize: 12, marginTop: 2 },
+    virelleBadge: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+    virelleLabel: { fontSize: 11, fontWeight: "700" },
+  });
