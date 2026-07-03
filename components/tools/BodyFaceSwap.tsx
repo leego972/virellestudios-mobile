@@ -236,10 +236,16 @@ import React, { useState, useEffect, useCallback } from "react";
 
               <Section n="9" title="Governing Law">
                 <P>
-                  These Terms are governed by and construed in accordance with the laws of England
-                  and Wales. Any dispute arising under these Terms shall be subject to the exclusive
-                  jurisdiction of the courts of England and Wales, without prejudice to any mandatory
-                  consumer protection provisions applicable in your country of residence.
+                  These Terms are governed by and construed in accordance with the laws of
+                  Victoria, Australia, and the Commonwealth of Australia. As a company
+                  established in Melbourne, Australia, any dispute arising under these
+                  Terms shall be subject to the non-exclusive jurisdiction of the courts
+                  of Victoria, Australia. These Terms are subject to the Australian
+                  Consumer Law (Competition and Consumer Act 2010, Cth), and nothing
+                  herein limits any rights you may have under that legislation or other
+                  mandatory consumer protection laws in your country of residence.
+                  Where both parties are located outside Australia, the laws of England
+                  and Wales apply as a secondary governing law.
                 </P>
               </Section>
 
@@ -572,12 +578,16 @@ import React, { useState, useEffect, useCallback } from "react";
                   <Text style={styles.swapButtonText}>Swapping…</Text>
                 </View>
               ) : (
-                <Text style={styles.swapButtonText}>✦  Swap Now</Text>
+                <Text style={styles.swapButtonText}>
+                  {isCreator ? "✦  HD Swap Now" : "✦  Creative Swap"}
+                </Text>
               )}
             </TouchableOpacity>
 
             {!isCreator && (
-              <Text style={styles.freeNote}>Free · Watermarked output</Text>
+              <Text style={styles.freeNote}>
+                Creative Mode · Free · Powered by Pollinations AI
+              </Text>
             )}
 
             {/* Result */}
@@ -592,7 +602,11 @@ import React, { useState, useEffect, useCallback } from "react";
                   {!isCreator && <SwappysWatermark visible />}
                 </View>
                 <View style={styles.resultFooter}>
-                  <Text style={styles.resultLabel}>Your swap is ready</Text>
+                  <Text style={styles.resultLabel}>
+                    {swapMutation.data?.isCreatorSwap
+                      ? "HD precision swap ready ✦"
+                      : "Creative swap ready — upgrade for HD"}
+                  </Text>
                   <TouchableOpacity
                     style={styles.saveBtn}
                     onPress={() =>
@@ -625,7 +639,7 @@ import React, { useState, useEffect, useCallback } from "react";
                 <View style={styles.upgradeBody}>
                   <Text style={styles.upgradeTitle}>Upgrade to Creator</Text>
                   <Text style={styles.upgradeDesc}>
-                    Remove watermark · Unlimited swaps · Full Virelle Studios filmmaking suite
+                    HD precision face swap · No watermark · Unlimited swaps · Full Virelle Studios suite
                   </Text>
                 </View>
                 <Text style={styles.upgradeChevron}>›</Text>
