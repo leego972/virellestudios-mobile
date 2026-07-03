@@ -343,7 +343,15 @@ export default function SubscriptionScreen({ projectId }: { projectId?: number }
           </TouchableOpacity>
         )}
 
-        {/* Market comparison note */}
+        {/* Payment note */}
+          <View style={{ paddingHorizontal: 4, marginBottom: 8 }}>
+            <Text style={{ fontSize: 12, color: "#6B7280", textAlign: "center", lineHeight: 18 }}>
+              Payment is processed securely by Virelle Studios on virellestudios.com.
+              You will be redirected to complete your subscription.
+            </Text>
+          </View>
+
+          {/* Market comparison note */}
         <View style={[styles.comparisonNote, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.comparisonTitle, { color: colors.foreground }]}>Why Virelle?</Text>
           <Text style={[styles.comparisonText, { color: colors.muted }]}>
