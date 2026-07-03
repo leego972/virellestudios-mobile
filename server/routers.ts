@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { swapRouter } from "./swap-router";
 import { COOKIE_NAME } from "../shared/const.js";
 import { TIER_MONTHLY_CREDITS } from "../shared/_core/subscription-constants.js";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -410,6 +411,7 @@ export const appRouter = router({
       return { success: true };
     }),
   }),
+  swap: swapRouter,
 });
 
 export type AppRouter = typeof appRouter;
