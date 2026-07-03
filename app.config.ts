@@ -67,7 +67,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+    permissions: ["POST_NOTIFICATIONS", "CAMERA", "READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO"],
     intentFilters: [
       {
         action: "VIEW",
@@ -93,6 +93,13 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Allow $(PRODUCT_NAME) to access your photo library to pick reference images.",
+        cameraPermission: "Allow $(PRODUCT_NAME) to access your camera.",
+      },
+    ],
     [
       "expo-notifications",
       {
