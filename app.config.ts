@@ -149,6 +149,7 @@ const config: ExpoConfig = {
   extra: {
     eas: { projectId: "b80d389f-d641-4b29-94b6-85c8d6011b55" },
     appVariant: IS_SWAPPYS ? "swappys" : "virelle",
+    isSwappys: IS_SWAPPYS,
   },
 };
 
