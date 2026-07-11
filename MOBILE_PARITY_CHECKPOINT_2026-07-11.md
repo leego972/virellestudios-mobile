@@ -11,46 +11,49 @@ The iOS/Android app uses two parity layers:
 
 The `All Tools` screen reads `/api/mobile/features` and uses a bundled offline registry when the network is unavailable. This is the correct low-cost architecture for broad website parity, provided the registry contract and routing maps remain synchronized.
 
-## Completed in this pass
+## Completed in this branch
 
 - Added `scripts/check-mobile-parity.mjs`.
 - Added `pnpm check:parity`.
-- Added a combined `pnpm verify` command that runs parity, TypeScript, lint, and tests.
+- Added `pnpm verify` to run parity, TypeScript, lint, and tests.
+- Made the parity parser section-aware so `TOOL_MAP`, `TOOL_MIN_TIER`, and `BUNDLED_REGISTRY` cannot be conflated.
+- Added a shared `constants/app-variant.ts` helper.
+- Updated tab navigation to use the shared Virelle/Swappys variant helper.
+- Hardened the authenticated WebView fallback:
+  - waits for the secure session token before rendering;
+  - injects authentication before page content loads;
+  - encodes tokens safely;
+  - restricts in-app navigation to the configured Virelle origin;
+  - opens external HTTPS links in the system browser;
+  - disables third-party cookies;
+  - improves HTTP, loading, retry, and progress handling.
 - The parity gate checks:
   - every bundled feature marked `hasNative: true` has a native route/component;
-  - every native tool route is represented in the bundled registry or explicitly exempted as an account/system screen;
+  - every native tool route is represented in the bundled registry or explicitly exempted;
   - every native tool has an explicit tier requirement;
   - the authenticated WebView fallback remains wired;
   - primary tabs remain registered;
-  - the live feature endpoint and offline fallback remain present.
+  - tabs use the shared variant helper;
+  - the live feature endpoint and offline fallback remain present;
+  - Swappys branding is not left ungated.
 
-## Confirmed parity risks
+## Remaining confirmed risks
 
-### 1. Native and offline registries can drift
+### 1. Native and offline registries may still be out of sync
 
-`funding-directory` exists in the native `TOOL_MAP`, but it is not present in the bundled fallback registry. The new parity check should fail until that mismatch is resolved rather than allowing the app to silently hide the tool offline.
+`funding-directory` exists in the native `TOOL_MAP`, but it is not present in the bundled fallback registry. `pnpm check:parity` should fail until this is resolved.
 
-### 2. App-variant detection is inconsistent
+### 2. Home branding still needs explicit Swappys gating
 
-Different files use different checks:
+The shared home screen contains the Swappys identity banner. It must render only when `IS_SWAPPYS` is true.
 
-- `extra.isSwappys`
-- Expo slug equal to `swappys`
-- `extra.appVariant === "swappys"`
+### 3. Live registry response needs execution-time confirmation
 
-These must be consolidated into one shared helper before producing Virelle and Swappys store builds. Otherwise a Virelle build can show Swappys-only branding or a Swappys build can expose Virelle tabs.
+The mobile hook expects `/api/mobile/features` to return a `FeatureRegistry` object with `features`. Other Swappys integration checks support capability objects under `flags` or `features`. The deployed server contract must be confirmed before release.
 
-### 3. Home branding is not fully variant-gated
+### 4. WebView parity remains functional parity, not native parity
 
-The home screen currently renders the Swappys identity banner in the shared mobile application flow. It must render only for the Swappys variant.
-
-### 4. Live registry response must be contract-tested
-
-The mobile hook assumes `/api/mobile/features` returns a `FeatureRegistry` object with `features`. Other Swappys integration checks refer to `flags` or `features` capability objects. The server should return a stable documented envelope, and the mobile client should normalize and validate it before caching.
-
-### 5. WebView parity is functional parity, not native parity
-
-Website-only tools can be available through the authenticated WebView, but device testing is still required for:
+Website-only tools are available through an authenticated WebView, but physical-device testing is still required for:
 
 - login/session propagation;
 - file uploads and camera/photo-library selection;
@@ -66,17 +69,16 @@ Website-only tools can be available through the authenticated WebView, but devic
 
 1. Run `pnpm check:parity` and resolve every failure.
 2. Run `pnpm verify` successfully.
-3. Add a shared app-variant utility and replace all direct variant checks.
-4. Gate Swappys-only home content.
-5. Confirm `/api/mobile/features` schema from the deployed Virelle backend.
-6. Test every live registry entry:
+3. Gate Swappys-only home content with the shared variant helper.
+4. Confirm `/api/mobile/features` against the deployed Virelle backend.
+5. Test every live registry entry:
    - native entry opens its component;
    - web entry opens the correct authenticated website route;
    - tier gating matches the website;
    - project placeholders resolve correctly.
-7. Build with EAS for both iOS and Android.
-8. Test on a physical iPhone and Android device.
+6. Build with EAS for iOS and Android.
+7. Test on a physical iPhone and Android device.
 
 ## Release truth
 
-The mobile application has a credible broad-parity architecture because non-native website tools can open through the WebView registry. It should not yet be described as verified full parity until the automated gate passes and physical-device testing is completed.
+The mobile application has a credible broad-parity architecture and materially improved authenticated WebView handling. It must not be described as verified full parity until the automated commands pass and physical-device testing is completed.
