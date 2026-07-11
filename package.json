@@ -10,6 +10,8 @@
     "build": "esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
+    "check:parity": "node scripts/check-mobile-parity.mjs",
+    "verify": "pnpm check:parity && pnpm check && pnpm lint && pnpm test",
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "vitest run",

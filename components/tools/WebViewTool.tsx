@@ -1,17 +1,4 @@
-/**
- * WebViewTool
- *
- * Renders any Virelle Studios website feature inside an authenticated WebView.
- * Used as the fallback for tools that don't have a dedicated native component yet.
- *
- * Features:
- * - Injects the user's session token so the website recognises the user
- * - Hides the website nav/header so it feels native
- * - Shows a loading bar while the page loads
- * - Handles errors gracefully with a retry button
- */
-
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,25 +6,21 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Linking,
 } from "react-native";
-import { WebView, WebViewNavigation } from "react-native-webview";
+import { WebView } from "react-native-webview";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
-import { getApiBaseUrl } from "@/constants/oauth";
+import { getApiBaseUrl, SESSION_TOKEN_KEY } from "@/constants/oauth";
 import * as SecureStore from "expo-secure-store";
-import { SESSION_TOKEN_KEY } from "@/constants/oauth";
 
 interface WebViewToolProps {
-  /** Tool label shown in the header */
   label: string;
-  /** Website path, e.g. "/projects/42/storyboard" (with real IDs substituted) */
   webPath: string;
-  /** Optional project ID to substitute into :projectId / :id placeholders */
   projectId?: number;
 }
 
-/** Inject CSS to hide the website's navigation bar and footer so it feels native */
 const HIDE_NAV_CSS = `
   (function() {
     var style = document.createElement('style');
@@ -54,15 +37,29 @@ const HIDE_NAV_CSS = `
   true;
 `;
 
-/** Inject the session token into document cookies so the website authenticates the user */
 function buildTokenInjectionScript(token: string): string {
+  const encodedToken = JSON.stringify(token);
   return `
     (function() {
-      document.cookie = 'session_token=${token}; path=/; SameSite=Lax';
-      document.cookie = 'auth_token=${token}; path=/; SameSite=Lax';
+      var token = ${encodedToken};
+      var secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = 'session_token=' + encodeURIComponent(token) + '; path=/; SameSite=Lax' + secure;
+      document.cookie = 'auth_token=' + encodeURIComponent(token) + '; path=/; SameSite=Lax' + secure;
     })();
     true;
   `;
+}
+
+function normalizeBaseUrl(value: string): string {
+  return value.replace(/\/$/, "");
+}
+
+function isSameOrigin(candidate: string, baseUrl: string): boolean {
+  try {
+    return new URL(candidate).origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
 }
 
 export default function WebViewTool({ label, webPath, projectId }: WebViewToolProps) {
@@ -71,39 +68,34 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
   const webViewRef = useRef<WebView>(null);
   const [loadProgress, setLoadProgress] = useState(0);
   const [hasError, setHasError] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null | undefined>(undefined);
 
-  // Resolve the full URL
-  const baseUrl = getApiBaseUrl();
+  const baseUrl = normalizeBaseUrl(getApiBaseUrl() || "");
   const resolvedPath = webPath
     .replace(/:projectId/g, String(projectId ?? ""))
     .replace(/:id/g, String(projectId ?? ""))
     .replace(/:sceneId/g, "");
-  const fullUrl = baseUrl ? `${baseUrl}${resolvedPath}` : resolvedPath;
+  const fullUrl = baseUrl ? `${baseUrl}${resolvedPath.startsWith("/") ? resolvedPath : `/${resolvedPath}`}` : resolvedPath;
 
-  // Load session token on mount
   React.useEffect(() => {
-    (async () => {
-      try {
-        const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
-        setSessionToken(token);
-      } catch (_) {
-        // No token — user will see the login page in the WebView
-      }
-    })();
+    let active = true;
+    SecureStore.getItemAsync(SESSION_TOKEN_KEY)
+      .then((token) => { if (active) setSessionToken(token); })
+      .catch(() => { if (active) setSessionToken(null); });
+    return () => { active = false; };
   }, []);
+
+  const authScript = useMemo(
+    () => (sessionToken ? buildTokenInjectionScript(sessionToken) : "true;"),
+    [sessionToken],
+  );
 
   const handleLoadEnd = () => {
     setLoadProgress(1);
-    // Inject CSS to hide nav and inject auth token
     webViewRef.current?.injectJavaScript(HIDE_NAV_CSS);
-    if (sessionToken) {
-      webViewRef.current?.injectJavaScript(buildTokenInjectionScript(sessionToken));
-    }
   };
 
   if (Platform.OS === "web") {
-    // On web preview, just show a link
     return (
       <ScreenContainer containerClassName="bg-background">
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -116,13 +108,11 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
         <View style={styles.center}>
           <Text style={styles.icon}>🌐</Text>
           <Text style={[styles.webTitle, { color: colors.foreground }]}>{label}</Text>
-          <Text style={[styles.webDesc, { color: colors.muted }]}>
-            This tool opens in the full web app.
-          </Text>
+          <Text style={[styles.webDesc, { color: colors.muted }]}>This tool opens in the full web app.</Text>
           <TouchableOpacity
             style={[styles.openBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
-              if (typeof window !== "undefined") window.open(fullUrl, "_blank");
+              if (typeof window !== "undefined" && fullUrl) window.open(fullUrl, "_blank", "noopener,noreferrer");
             }}
           >
             <Text style={styles.openBtnText}>Open in Browser</Text>
@@ -132,20 +122,27 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
     );
   }
 
+  if (sessionToken === undefined) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.muted }]}>Preparing secure session…</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>
-          {label}
-        </Text>
+        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{label}</Text>
         <TouchableOpacity
           style={styles.reloadBtn}
           onPress={() => {
             setHasError(false);
+            setLoadProgress(0);
             webViewRef.current?.reload();
           }}
         >
@@ -153,32 +150,22 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
         </TouchableOpacity>
       </View>
 
-      {/* Progress bar */}
       {loadProgress > 0 && loadProgress < 1 && (
         <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { backgroundColor: colors.primary, width: `${loadProgress * 100}%` },
-            ]}
-          />
+          <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${loadProgress * 100}%` }]} />
         </View>
       )}
 
-      {/* Error state */}
       {hasError ? (
         <View style={styles.center}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={[styles.errorTitle, { color: colors.foreground }]}>
-            Could not load {label}
-          </Text>
-          <Text style={[styles.errorDesc, { color: colors.muted }]}>
-            Check your internet connection and try again.
-          </Text>
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>Could not load {label}</Text>
+          <Text style={[styles.errorDesc, { color: colors.muted }]}>Check your internet connection and try again.</Text>
           <TouchableOpacity
             style={[styles.retryBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
               setHasError(false);
+              setLoadProgress(0);
               webViewRef.current?.reload();
             }}
           >
@@ -190,11 +177,21 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
           ref={webViewRef}
           source={{ uri: fullUrl }}
           style={styles.webview}
+          originWhitelist={["https://*"]}
+          injectedJavaScriptBeforeContentLoaded={authScript}
+          injectedJavaScript={HIDE_NAV_CSS}
+          onLoadStart={() => setLoadProgress(0.05)}
           onLoadProgress={({ nativeEvent }) => setLoadProgress(nativeEvent.progress)}
           onLoadEnd={handleLoadEnd}
           onError={() => setHasError(true)}
           onHttpError={({ nativeEvent }) => {
-            if (nativeEvent.statusCode >= 500) setHasError(true);
+            if (nativeEvent.statusCode >= 400) setHasError(true);
+          }}
+          onShouldStartLoadWithRequest={(request) => {
+            if (!request.url || request.url === "about:blank") return true;
+            if (isSameOrigin(request.url, baseUrl)) return true;
+            if (/^https:\/\//i.test(request.url)) void Linking.openURL(request.url);
+            return false;
           }}
           startInLoadingState
           renderLoading={() => (
@@ -203,17 +200,10 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
               <Text style={[styles.loadingText, { color: colors.muted }]}>Loading {label}…</Text>
             </View>
           )}
-          // Allow all navigation within the Virelle domain
-          onNavigationStateChange={(navState: WebViewNavigation) => {
-            // If navigating away from the Virelle domain, open in system browser
-            if (navState.url && !navState.url.includes("virellestudios") && !navState.url.startsWith(baseUrl)) {
-              webViewRef.current?.stopLoading();
-            }
-          }}
           javaScriptEnabled
           domStorageEnabled
           sharedCookiesEnabled
-          thirdPartyCookiesEnabled
+          thirdPartyCookiesEnabled={false}
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
         />
@@ -231,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 0.5,
-    paddingTop: 52, // account for status bar
+    paddingTop: 52,
   },
   backBtn: { minWidth: 48, alignItems: "flex-start" },
   back: { fontSize: 16 },

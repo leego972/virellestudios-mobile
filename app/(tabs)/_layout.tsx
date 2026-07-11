@@ -5,10 +5,7 @@ import { Platform, View, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/use-colors";
 import { HollywoodIcon } from "@/components/hollywood-badge";
 import type { ToolIconKey } from "@/constants/hollywoodIcons";
-  import Constants from "expo-constants";
-
-  const IS_SWAPPYS = Constants.expoConfig?.extra?.isSwappys === true ||
-    Constants.expoConfig?.slug === "swappys";
+import { IS_SWAPPYS } from "@/constants/app-variant";
 
 /**
  * Custom tab bar icon wrapper using Hollywood branded tool icons.
