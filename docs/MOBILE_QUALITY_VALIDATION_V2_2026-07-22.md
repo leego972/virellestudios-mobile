@@ -8,6 +8,8 @@ Checks:
 - artifact-captured TypeScript diagnostics
 - Expo lint and Doctor
 - tests and server build
-- unsuppressed dependency audit
+- artifact-captured unsuppressed dependency audit
 - canonical Virelle authenticated web fallback
 - full iOS/Android packaging workflows where credentials are available
+
+All pre-audit checks passed in the preceding run; this pass captures the remaining advisory chain for direct remediation.
