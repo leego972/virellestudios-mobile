@@ -1,6 +1,8 @@
 # Full Mobile Quality Validation V2 — 22 July 2026
 
-This branch was created from the current `main` after the previous validation branch became stale. It changes only this note and runs:
+This run validates the exact current `main` tree after replacing the duplicated Swappys component with the smaller canonical Virelle client.
+
+Checks:
 
 - frozen pnpm installation
 - artifact-captured TypeScript diagnostics
