@@ -1,68 +1,66 @@
-/**
- * WebViewTool
- *
- * Renders any Virelle Studios website feature inside an authenticated WebView.
- * Used as the fallback for tools that don't have a dedicated native component yet.
- *
- * Features:
- * - Injects the user's session token so the website recognises the user
- * - Hides the website nav/header so it feels native
- * - Shows a loading bar while the page loads
- * - Handles errors gracefully with a retry button
- */
-
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Linking,
+  Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
+  View,
 } from "react-native";
-import { WebView, WebViewNavigation } from "react-native-webview";
+import { WebView } from "react-native-webview";
+import type { WebViewNavigation } from "react-native-webview";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
-import { getApiBaseUrl } from "@/constants/oauth";
+import { getWebAppBaseUrl, SESSION_TOKEN_KEY } from "@/constants/oauth";
 import * as SecureStore from "expo-secure-store";
-import { SESSION_TOKEN_KEY } from "@/constants/oauth";
+import { COOKIE_NAME } from "@/shared/const";
 
 interface WebViewToolProps {
-  /** Tool label shown in the header */
   label: string;
-  /** Website path, e.g. "/projects/42/storyboard" (with real IDs substituted) */
   webPath: string;
-  /** Optional project ID to substitute into :projectId / :id placeholders */
   projectId?: number;
 }
 
-/** Inject CSS to hide the website's navigation bar and footer so it feels native */
-const HIDE_NAV_CSS = `
+const MOBILE_SHELL_CSS = `
   (function() {
     var style = document.createElement('style');
     style.textContent = \`
-      nav, header, .navbar, [class*="nav-"], [class*="header-"],
-      [class*="Navbar"], [class*="Header"], [data-testid="navbar"],
-      footer, [class*="footer-"], [class*="Footer"] {
-        display: none !important;
-      }
+      [data-testid="dashboard-sidebar"], .desktop-sidebar, .desktop-only-sidebar,
+      footer[data-site-footer], [data-testid="site-footer"] { display: none !important; }
+      html, body { overscroll-behavior: none; }
       body { padding-top: 0 !important; margin-top: 0 !important; }
     \`;
     document.head.appendChild(style);
+    document.documentElement.setAttribute('data-virelle-client', 'mobile-webview');
   })();
   true;
 `;
 
-/** Inject the session token into document cookies so the website authenticates the user */
-function buildTokenInjectionScript(token: string): string {
+function buildCookieInjectionScript(token: string): string {
+  const safeToken = JSON.stringify(token);
+  const safeCookieName = JSON.stringify(COOKIE_NAME);
   return `
     (function() {
-      document.cookie = 'session_token=${token}; path=/; SameSite=Lax';
-      document.cookie = 'auth_token=${token}; path=/; SameSite=Lax';
+      var token = ${safeToken};
+      var cookieName = ${safeCookieName};
+      document.cookie = cookieName + '=' + encodeURIComponent(token) + '; Path=/; Secure; SameSite=Lax';
+      window.__VIRELLE_MOBILE_CLIENT__ = true;
     })();
     true;
   `;
+}
+
+function resolvePath(webPath: string, projectId?: number): string | null {
+  const id = Number.isInteger(projectId) && Number(projectId) > 0 ? String(projectId) : "";
+  const path = webPath
+    .replace(/:projectId/g, id)
+    .replace(/:id/g, id)
+    .replace(/:sceneId/g, "");
+  if (!path.startsWith("/") || path.includes("\\") || /[\u0000-\u001f\u007f]/.test(path)) return null;
+  if (path.includes(":projectId") || path.includes(":id") || path.includes(":sceneId")) return null;
+  return path;
 }
 
 export default function WebViewTool({ label, webPath, projectId }: WebViewToolProps) {
@@ -71,61 +69,78 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
   const webViewRef = useRef<WebView>(null);
   const [loadProgress, setLoadProgress] = useState(0);
   const [hasError, setHasError] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null | undefined>(undefined);
 
-  // Resolve the full URL
-  const baseUrl = getApiBaseUrl();
-  const resolvedPath = webPath
-    .replace(/:projectId/g, String(projectId ?? ""))
-    .replace(/:id/g, String(projectId ?? ""))
-    .replace(/:sceneId/g, "");
-  const fullUrl = baseUrl ? `${baseUrl}${resolvedPath}` : resolvedPath;
+  const webOrigin = getWebAppBaseUrl();
+  const resolvedPath = useMemo(() => resolvePath(webPath, projectId), [webPath, projectId]);
+  const fullUrl = useMemo(() => {
+    if (!resolvedPath) return null;
+    try {
+      return new URL(resolvedPath, `${webOrigin}/`).toString();
+    } catch {
+      return null;
+    }
+  }, [resolvedPath, webOrigin]);
 
-  // Load session token on mount
   React.useEffect(() => {
-    (async () => {
-      try {
-        const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
-        setSessionToken(token);
-      } catch (_) {
-        // No token — user will see the login page in the WebView
-      }
-    })();
+    let active = true;
+    SecureStore.getItemAsync(SESSION_TOKEN_KEY)
+      .then((token) => { if (active) setSessionToken(token); })
+      .catch(() => { if (active) setSessionToken(null); });
+    return () => { active = false; };
   }, []);
 
-  const handleLoadEnd = () => {
-    setLoadProgress(1);
-    // Inject CSS to hide nav and inject auth token
-    webViewRef.current?.injectJavaScript(HIDE_NAV_CSS);
-    if (sessionToken) {
-      webViewRef.current?.injectJavaScript(buildTokenInjectionScript(sessionToken));
+  function isFirstParty(value: string): boolean {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === "https:" && !parsed.username && !parsed.password && parsed.origin === webOrigin;
+    } catch {
+      return false;
     }
+  }
+
+  const handleNavigationRequest = (request: WebViewNavigation) => {
+    if (isFirstParty(request.url)) return true;
+    try {
+      const parsed = new URL(request.url);
+      if (["https:", "mailto:"].includes(parsed.protocol) && !parsed.username && !parsed.password) {
+        void Linking.openURL(parsed.toString());
+      }
+    } catch {
+      // Invalid and unsafe schemes are blocked.
+    }
+    return false;
   };
 
+  if (!fullUrl) {
+    return (
+      <ScreenContainer containerClassName="bg-background">
+        <View style={styles.center}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>This tool needs a valid project context</Text>
+          <Text style={[styles.errorDesc, { color: colors.muted }]}>Open the tool from a Virelle project and try again.</Text>
+          <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+            <Text style={styles.retryText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
   if (Platform.OS === "web") {
-    // On web preview, just show a link
     return (
       <ScreenContainer containerClassName="bg-background">
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()}><Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text></TouchableOpacity>
           <Text style={[styles.title, { color: colors.foreground }]}>{label}</Text>
           <View style={{ width: 48 }} />
         </View>
         <View style={styles.center}>
           <Text style={styles.icon}>🌐</Text>
           <Text style={[styles.webTitle, { color: colors.foreground }]}>{label}</Text>
-          <Text style={[styles.webDesc, { color: colors.muted }]}>
-            This tool opens in the full web app.
-          </Text>
-          <TouchableOpacity
-            style={[styles.openBtn, { backgroundColor: colors.primary }]}
-            onPress={() => {
-              if (typeof window !== "undefined") window.open(fullUrl, "_blank");
-            }}
-          >
-            <Text style={styles.openBtnText}>Open in Browser</Text>
+          <Text style={[styles.webDesc, { color: colors.muted }]}>This tool opens in the canonical Virelle web app.</Text>
+          <TouchableOpacity style={[styles.openBtn, { backgroundColor: colors.primary }]} onPress={() => void Linking.openURL(fullUrl)}>
+            <Text style={styles.openBtnText}>Open Virelle</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -134,54 +149,33 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>
-          {label}
-        </Text>
-        <TouchableOpacity
-          style={styles.reloadBtn}
-          onPress={() => {
-            setHasError(false);
-            webViewRef.current?.reload();
-          }}
-        >
+        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{label}</Text>
+        <TouchableOpacity style={styles.reloadBtn} onPress={() => { setHasError(false); webViewRef.current?.reload(); }}>
           <Text style={[styles.reloadText, { color: colors.muted }]}>↻</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Progress bar */}
       {loadProgress > 0 && loadProgress < 1 && (
         <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { backgroundColor: colors.primary, width: `${loadProgress * 100}%` },
-            ]}
-          />
+          <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${loadProgress * 100}%` }]} />
         </View>
       )}
 
-      {/* Error state */}
-      {hasError ? (
+      {sessionToken === undefined ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.muted }]}>Preparing secure Virelle session…</Text>
+        </View>
+      ) : hasError ? (
         <View style={styles.center}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={[styles.errorTitle, { color: colors.foreground }]}>
-            Could not load {label}
-          </Text>
-          <Text style={[styles.errorDesc, { color: colors.muted }]}>
-            Check your internet connection and try again.
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryBtn, { backgroundColor: colors.primary }]}
-            onPress={() => {
-              setHasError(false);
-              webViewRef.current?.reload();
-            }}
-          >
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>Could not load {label}</Text>
+          <Text style={[styles.errorDesc, { color: colors.muted }]}>Check your connection or sign in again.</Text>
+          <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={() => { setHasError(false); webViewRef.current?.reload(); }}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -189,12 +183,15 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
         <WebView
           ref={webViewRef}
           source={{ uri: fullUrl }}
-          style={styles.webview}
+          originWhitelist={[webOrigin]}
+          injectedJavaScriptBeforeContentLoaded={sessionToken ? buildCookieInjectionScript(sessionToken) : "true;"}
+          injectedJavaScript={MOBILE_SHELL_CSS}
+          onShouldStartLoadWithRequest={handleNavigationRequest}
           onLoadProgress={({ nativeEvent }) => setLoadProgress(nativeEvent.progress)}
-          onLoadEnd={handleLoadEnd}
+          onLoadEnd={() => setLoadProgress(1)}
           onError={() => setHasError(true)}
           onHttpError={({ nativeEvent }) => {
-            if (nativeEvent.statusCode >= 500) setHasError(true);
+            if (nativeEvent.statusCode === 401 || nativeEvent.statusCode === 403 || nativeEvent.statusCode >= 500) setHasError(true);
           }}
           startInLoadingState
           renderLoading={() => (
@@ -203,17 +200,10 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
               <Text style={[styles.loadingText, { color: colors.muted }]}>Loading {label}…</Text>
             </View>
           )}
-          // Allow all navigation within the Virelle domain
-          onNavigationStateChange={(navState: WebViewNavigation) => {
-            // If navigating away from the Virelle domain, open in system browser
-            if (navState.url && !navState.url.includes("virellestudios") && !navState.url.startsWith(baseUrl)) {
-              webViewRef.current?.stopLoading();
-            }
-          }}
           javaScriptEnabled
           domStorageEnabled
           sharedCookiesEnabled
-          thirdPartyCookiesEnabled
+          thirdPartyCookiesEnabled={false}
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
         />
@@ -224,15 +214,7 @@ export default function WebViewTool({ label, webPath, projectId }: WebViewToolPr
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    paddingTop: 52, // account for status bar
-  },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, paddingTop: 52 },
   backBtn: { minWidth: 48, alignItems: "flex-start" },
   back: { fontSize: 16 },
   title: { fontSize: 16, fontWeight: "600", flex: 1, textAlign: "center" },
@@ -240,7 +222,6 @@ const styles = StyleSheet.create({
   reloadText: { fontSize: 20 },
   progressBar: { height: 2, width: "100%" },
   progressFill: { height: 2 },
-  webview: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 12 },
   icon: { fontSize: 48 },
   webTitle: { fontSize: 20, fontWeight: "700" },
@@ -248,7 +229,7 @@ const styles = StyleSheet.create({
   openBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
   openBtnText: { color: "#fff", fontWeight: "600", fontSize: 15 },
   errorIcon: { fontSize: 48 },
-  errorTitle: { fontSize: 18, fontWeight: "700" },
+  errorTitle: { fontSize: 18, fontWeight: "700", textAlign: "center" },
   errorDesc: { fontSize: 13, textAlign: "center", lineHeight: 20 },
   retryBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
   retryText: { color: "#fff", fontWeight: "600", fontSize: 15 },
