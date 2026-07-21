@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "requireCommit": false,
+    "requireCommit": true,
     "appVersionSource": "local"
   },
   "build": {
@@ -19,33 +19,12 @@
       }
     },
     "production": {
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "ios": {
-        "credentialsSource": "remote"
-      },
-      "distribution": "store"
-    },
-    "swappys-production": {
       "distribution": "store",
-      "env": {
-        "APP_VARIANT": "swappys"
+      "android": {
+        "buildType": "app-bundle"
       },
       "ios": {
         "credentialsSource": "remote"
-      },
-      "android": {
-        "buildType": "app-bundle"
-      }
-    },
-    "swappys-preview": {
-      "distribution": "internal",
-      "env": {
-        "APP_VARIANT": "swappys"
-      },
-      "android": {
-        "buildType": "apk"
       }
     }
   },
@@ -57,16 +36,6 @@
         "ascApiKeyId": "$EXPO_APPLE_API_KEY_ID",
         "appleTeamId": "5AUSX9646V",
         "ascAppId": "6761315616",
-        "language": "en-US"
-      }
-    },
-    "swappys": {
-      "ios": {
-        "ascApiKeyPath": "$EXPO_APPLE_API_KEY_PATH",
-        "ascApiKeyIssuerId": "$EXPO_APPLE_API_ISSUER_ID",
-        "ascApiKeyId": "$EXPO_APPLE_API_KEY_ID",
-        "appleTeamId": "5AUSX9646V",
-        "ascAppId": "FILL_IN_SWAPPYS_APP_STORE_ID",
         "language": "en-US"
       }
     }
