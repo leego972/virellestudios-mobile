@@ -1,59 +1,35 @@
-// Load environment variables with proper priority (system > .env)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
-const IS_SWAPPYS = process.env.APP_VARIANT === "swappys";
-
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
-// Bundle ID can only contain letters, numbers, and dots
-// Android requires each dot-separated segment to start with a letter
 const rawBundleId = "space.manus.virellestudios.mobile.t20260317065920";
-const bundleId =
-  rawBundleId
-    .replace(/[-_]/g, ".") // Replace hyphens/underscores with dots
-    .replace(/[^a-zA-Z0-9.]/g, "") // Remove invalid chars
-    .replace(/\.+/g, ".") // Collapse consecutive dots
-    .replace(/^\.+|\.+$/g, "") // Trim leading/trailing dots
-    .toLowerCase()
-    .split(".")
-    .map((segment) => {
-      // Android requires each segment to start with a letter
-      // Prefix with 'x' if segment starts with a digit
-      return /^[a-zA-Z]/.test(segment) ? segment : "x" + segment;
-    })
-    .join(".") || "space.manus.app";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
+const bundleId = rawBundleId
+  .replace(/[-_]/g, ".")
+  .replace(/[^a-zA-Z0-9.]/g, "")
+  .replace(/\.+/g, ".")
+  .replace(/^\.+|\.+$/g, "")
+  .toLowerCase()
+  .split(".")
+  .map((segment) => /^[a-zA-Z]/.test(segment) ? segment : `x${segment}`)
+  .join(".") || "space.manus.virellestudios.mobile";
 
-const env = {
-  appName: IS_SWAPPYS ? "Swappys" : "Virelle Studios",
-  appSlug: IS_SWAPPYS ? "swappys" : "virellestudios-mobile",
-  logoUrl: IS_SWAPPYS
-    ? ""
-    : "https://d2xsxph8kpxj0f.cloudfront.net/310519663446819082/CAkcwNccSUcizneMbEWnnU/icon_de3695d5.png",
-  scheme: IS_SWAPPYS ? "swappys" : schemeFromBundleId,
-  iosBundleId: IS_SWAPPYS ? "com.virellestudios.swappys" : bundleId,
-  androidPackage: IS_SWAPPYS ? "com.virellestudios.swappys" : bundleId,
-};
+const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
+const oauthScheme = `manus${timestamp}`;
 
 const config: ExpoConfig = {
-  name: env.appName,
-  slug: env.appSlug,
+  name: "Virelle Studios",
+  slug: "virellestudios-mobile",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: [env.scheme, "virelle"],
+  scheme: [oauthScheme, "virelle"],
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
-    bundleIdentifier: env.iosBundleId,
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+    bundleIdentifier: bundleId,
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
@@ -64,21 +40,15 @@ const config: ExpoConfig = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    package: env.androidPackage,
+    package: bundleId,
     permissions: ["POST_NOTIFICATIONS", "CAMERA", "READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO"],
     intentFilters: [
       {
         action: "VIEW",
         autoVerify: true,
         data: [
-          {
-            scheme: env.scheme,
-            host: "*",
-          },
-          {
-            scheme: "virelle",
-            host: "*",
-          },
+          { scheme: oauthScheme, host: "*" },
+          { scheme: "virelle", host: "*" },
         ],
         category: ["BROWSABLE", "DEFAULT"],
       },
@@ -94,21 +64,17 @@ const config: ExpoConfig = {
     [
       "expo-image-picker",
       {
-        photosPermission: "Allow $(PRODUCT_NAME) to access your photo library to pick reference images.",
-        cameraPermission: "Allow $(PRODUCT_NAME) to access your camera.",
+        photosPermission: "Allow $(PRODUCT_NAME) to access your photo library to select production references.",
+        cameraPermission: "Allow $(PRODUCT_NAME) to access your camera when you choose to capture production media.",
       },
     ],
     [
       "expo-notifications",
-      {
-        "iosDisplayInForeground": true
-      }
+      { iosDisplayInForeground: true },
     ],
     [
       "expo-audio",
-      {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
+      { microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone for voice and production audio tools." },
     ],
     [
       "expo-video",
@@ -124,9 +90,7 @@ const config: ExpoConfig = {
         imageWidth: 200,
         resizeMode: "contain",
         backgroundColor: "#0a0a0f",
-        dark: {
-          backgroundColor: "#0a0a0f",
-        },
+        dark: { backgroundColor: "#0a0a0f" },
       },
     ],
     [
@@ -145,8 +109,8 @@ const config: ExpoConfig = {
   },
   extra: {
     eas: { projectId: "b80d389f-d641-4b29-94b6-85c8d6011b55" },
-    appVariant: IS_SWAPPYS ? "swappys" : "virelle",
-    isSwappys: IS_SWAPPYS,
+    appVariant: "virelle",
+    canonicalWebApp: "https://virelle.life",
   },
 };
 
