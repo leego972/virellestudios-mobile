@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - hardening-mobile-deps-2026-07-22
+  pull_request:
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/dependency-refresh.yml"
   workflow_dispatch:
 
 permissions:
