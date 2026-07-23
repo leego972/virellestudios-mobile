@@ -1,0 +1,65 @@
+import type { ToolIconKey } from "@/constants/hollywoodIcons";
+
+export const VIRELLE_CINEMA_SPRITE = "data:image/webp;base64,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";
+
+export const VIRELLE_CINEMA_SPRITE_SIZE = { width: 300, height: 225 } as const;
+export const VIRELLE_CINEMA_FRAME_SIZE = 47;
+
+export const VIRELLE_CINEMA_FRAMES = {
+  dashboard: { x: 10.5, y: 5 },
+  projects: { x: 66, y: 5 },
+  studio: { x: 121.5, y: 5 },
+  scripts: { x: 177, y: 5 },
+  casting: { x: 232.5, y: 5 },
+  wardrobe: { x: 10.5, y: 58.5 },
+  marketplace: { x: 66, y: 58.5 },
+  ai_tools: { x: 121.5, y: 58.5 },
+  scenes: { x: 177, y: 58.5 },
+  storyboards: { x: 232.5, y: 58.5 },
+  render: { x: 10.5, y: 112 },
+  vfx: { x: 66, y: 112 },
+  sound: { x: 121.5, y: 112 },
+  music: { x: 177, y: 112 },
+  editing: { x: 232.5, y: 112 },
+  distribution: { x: 10.5, y: 160.5 },
+  reports: { x: 66, y: 160.5 },
+  billing: { x: 121.5, y: 160.5 },
+  team: { x: 177, y: 160.5 },
+  support: { x: 232.5, y: 160.5 },
+} as const;
+
+export type VirelleCinemaIconKey = keyof typeof VIRELLE_CINEMA_FRAMES;
+
+export const TOOL_TO_VIRELLE_CINEMA_ICON: Record<ToolIconKey, VirelleCinemaIconKey> = {
+  ai_casting: "casting",
+  asset_marketplace: "marketplace",
+  budget_estimator: "reports",
+  characters: "casting",
+  color_grading: "editing",
+  content_creator: "distribution",
+  continuity_checker: "reports",
+  credits: "billing",
+  credits_editor: "editing",
+  dialogue_enhancer: "sound",
+  director_chat: "ai_tools",
+  full_film_generator: "studio",
+  location_scout: "scenes",
+  mood_board: "storyboards",
+  multi_shot_sequencer: "editing",
+  nle_export: "distribution",
+  poster_maker: "reports",
+  referrals: "team",
+  scene_builder: "scenes",
+  script_writer: "scripts",
+  settings: "dashboard",
+  shot_list: "scenes",
+  sound_effects: "sound",
+  storyboard: "storyboards",
+  subscription_plans: "billing",
+  subtitles: "editing",
+  team_collaboration: "team",
+  trailer_studio: "editing",
+  vfx_suite: "vfx",
+  video_generation: "render",
+  visual_effects: "vfx",
+};
