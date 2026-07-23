@@ -1,17 +1,22 @@
 /**
  * HollywoodBadge — renders a tier badge PNG image.
- * HollywoodIcon — renders a tool icon PNG image.
- *
- * Both use local bundled assets for offline/native support.
+ * HollywoodIcon — renders the original Virelle cinema icon system.
  */
 import React from "react";
-import { Image, ImageStyle, StyleProp } from "react-native";
+import {
+  Image,
+  type ImageStyle,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import { VirelleCinemaIcon } from "@/components/virelle-cinema-icon";
 import {
   TIER_BADGE_IMAGES,
   TOOL_ICON_IMAGES,
-  TierBadgeKey,
-  ToolIconKey,
+  type TierBadgeKey,
+  type ToolIconKey,
 } from "@/constants/hollywoodIcons";
+import { TOOL_TO_VIRELLE_CINEMA_ICON } from "@/constants/virelleCinemaIcons";
 
 interface HollywoodBadgeProps {
   tier: TierBadgeKey;
@@ -19,9 +24,6 @@ interface HollywoodBadgeProps {
   style?: StyleProp<ImageStyle>;
 }
 
-/**
- * Renders the Hollywood tier badge (Indie / Creator / Industry / New / Featured / Cinematic).
- */
 export function HollywoodBadge({ tier, size = 32, style }: HollywoodBadgeProps) {
   const source = TIER_BADGE_IMAGES[tier];
   if (!source) return null;
@@ -37,19 +39,28 @@ export function HollywoodBadge({ tier, size = 32, style }: HollywoodBadgeProps) 
 interface HollywoodIconProps {
   tool: ToolIconKey;
   size?: number;
-  style?: StyleProp<ImageStyle>;
+  style?: StyleProp<ViewStyle>;
 }
 
-/**
- * Renders a Hollywood tool icon PNG.
- */
 export function HollywoodIcon({ tool, size = 32, style }: HollywoodIconProps) {
+  const cinemaIcon = TOOL_TO_VIRELLE_CINEMA_ICON[tool];
+  if (cinemaIcon) {
+    return (
+      <VirelleCinemaIcon
+        icon={cinemaIcon}
+        size={size}
+        style={style}
+        accessibilityLabel={`${tool.replace(/_/g, " ")} icon`}
+      />
+    );
+  }
+
   const source = TOOL_ICON_IMAGES[tool];
   if (!source) return null;
   return (
     <Image
       source={source}
-      style={[{ width: size, height: size, resizeMode: "contain" }, style]}
+      style={[{ width: size, height: size, resizeMode: "contain" }, style as StyleProp<ImageStyle>]}
       accessibilityLabel={`${tool} icon`}
     />
   );
