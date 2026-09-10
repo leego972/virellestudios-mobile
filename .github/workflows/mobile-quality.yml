@@ -44,9 +44,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          pnpm audit --audit-level moderate > audit.log 2>&1
+          node scripts/security-audit.mjs > audit.log 2>&1
           status=$?
-          tail -n 200 audit.log
+          cat audit.log
           exit $status
       - name: Upload dependency audit log
         if: always()
