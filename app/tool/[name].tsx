@@ -1,11 +1,16 @@
+import React, { useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { useFeatureRegistry } from "@/hooks/use-feature-registry";
 import { trpc } from "@/lib/trpc";
 import { TIER_ORDER } from "@/shared/_core/subscription-constants";
+import WebViewTool from "@/components/tools/WebViewTool";
 
-// Lazy-loaded tool screens
+// Native tool screens. The live website feature registry remains the source of
+// truth: when a feature has no native screen, this route falls back to the
+// authenticated WebView so mobile does not lose access to website features.
 import ScriptWriterScreen from "@/components/tools/ScriptWriter";
 import StoryboardScreen from "@/components/tools/Storyboard";
 import ShotListScreen from "@/components/tools/ShotList";
@@ -34,85 +39,29 @@ import SoundEffectsScreen from "@/components/tools/SoundEffects";
 import CreditsEditorScreen from "@/components/tools/CreditsEditor";
 import SceneEditorScreen from "@/components/tools/SceneEditor";
 
-/**
- * Minimum subscription tier required to access each tool.
- * Mirrors the minTier values in hooks/use-feature-registry.ts.
- * Tools not listed here are treated as "free" (always accessible).
- */
-// Mirrors minTier in hooks/use-feature-registry.ts.
-// Three canonical tiers: indie (Indie), amateur (Creator), independent (Industry).
-const TOOL_MIN_TIER: Record<string, string> = {
-  // Writing
-  "script-writer":        "indie",
-  "dialogue":             "indie",
-  "scene-builder":        "free",
-  "scene-editor":         "free",
-  // Visual
-  "storyboard":           "amateur",
-  "mood-board":           "indie",
-  "color-grading":        "amateur",
-  // AI Video
-  "video-generation":     "amateur",
-  "trailer":              "independent",
-  "film-generator":       "independent",
-  // Production
-  "shot-list":            "indie",
-  "budget":               "indie",
-  "characters":           "free",
-  // Post-Production
-  "subtitles":            "amateur",
-  "continuity":           "amateur",
-  "sound-effects":        "amateur",
-  "film-post-production": "independent",
-  // Management
-  "team":                 "independent",
-  "credits-editor":       "amateur",
-  "funding-directory":    "independent",
-  // Account (always free)
-  "subscription":         "free",
-  "credits":              "free",
-  "referrals":            "free",
-  "all-tools":            "free",
-  "notifications":        "free",
-  "privacy":              "free",
-  "terms":                "free",
-};
-
-/** Human-readable tier display names for upgrade alerts. Three public tiers: Indie, Creator, Industry. */
-const TIER_DISPLAY: Record<string, string> = {
-  free:        "Free",
-  indie:       "Indie",
-  amateur:     "Creator",
-  independent: "Industry",
-  creator:     "Industry",  // alias
-  studio:      "Industry",  // alias
-  industry:    "Industry",
-  beta:        "Beta",
-};
-
-const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
+const NATIVE_TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "script-writer": ScriptWriterScreen,
-  "storyboard": StoryboardScreen,
+  storyboard: StoryboardScreen,
   "shot-list": ShotListScreen,
   "video-generation": VideoGenerationScreen,
-  "trailer": TrailerScreen,
-  "dialogue": DialogueScreen,
-  "budget": BudgetScreen,
-  "continuity": ContinuityScreen,
-  "subtitles": SubtitlesScreen,
+  trailer: TrailerScreen,
+  dialogue: DialogueScreen,
+  budget: BudgetScreen,
+  continuity: ContinuityScreen,
+  subtitles: SubtitlesScreen,
   "scene-builder": SceneBuilderScreen,
-  "characters": CharactersScreen,
-  "team": TeamScreen,
-  "subscription": SubscriptionScreen,
-  "referrals": ReferralsScreen,
-  "credits": CreditsScreen,
+  characters: CharactersScreen,
+  team: TeamScreen,
+  subscription: SubscriptionScreen,
+  referrals: ReferralsScreen,
+  credits: CreditsScreen,
   "all-tools": AllToolsScreen,
   "film-generator": FilmGeneratorScreen,
-  "privacy": PrivacyScreen,
-  "terms": TermsScreen,
+  privacy: PrivacyScreen,
+  terms: TermsScreen,
   "film-post-production": FilmPostProductionScreen,
   "funding-directory": FundingDirectoryScreen,
-  "notifications": NotificationSettingsScreen,
+  notifications: NotificationSettingsScreen,
   "mood-board": MoodBoardScreen,
   "color-grading": ColorGradingScreen,
   "sound-effects": SoundEffectsScreen,
@@ -120,27 +69,52 @@ const TOOL_MAP: Record<string, React.ComponentType<{ projectId?: number }>> = {
   "scene-editor": SceneEditorScreen,
 };
 
+const TIER_DISPLAY: Record<string, string> = {
+  free: "Free",
+  indie: "Indie",
+  amateur: "Creator",
+  independent: "Industry",
+  creator: "Industry",
+  studio: "Industry",
+  industry: "Industry",
+  beta: "Beta",
+};
+
 export default function ToolScreen() {
   const { name, projectId } = useLocalSearchParams<{ name: string; projectId?: string }>();
   const colors = useColors();
   const router = useRouter();
+  const { registry, loading } = useFeatureRegistry();
   const { data: creditsData } = trpc.credits.balance.useQuery();
+  const parsedProjectId = projectId && Number(projectId) > 0 ? Number(projectId) : undefined;
+  const feature = registry.features.find((entry) => entry.id === name);
+  const NativeTool = NATIVE_TOOL_MAP[name];
 
-  const ToolComponent = TOOL_MAP[name];
+  // Director Chat is a first-class tab rather than a nested tool screen.
+  useEffect(() => {
+    if (name === "director-chat") router.replace("/(tabs)/chat" as never);
+  }, [name, router]);
 
-  // ── Tier gating ──────────────────────────────────────────────────────────
-  const currentTier = creditsData?.tier ?? "none";
-  const minTier = TOOL_MIN_TIER[name] ?? "free";
-
-  function canUseTool(): boolean {
-    if (minTier === "free" || minTier === "none") return true;
-    const userIdx = TIER_ORDER.indexOf(currentTier as (typeof TIER_ORDER)[number]);
-    const reqIdx  = TIER_ORDER.indexOf(minTier as (typeof TIER_ORDER)[number]);
-    if (userIdx === -1) return false; // not subscribed
-    return userIdx >= reqIdx;
+  if (name === "director-chat") {
+    return (
+      <ScreenContainer containerClassName="bg-background">
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </ScreenContainer>
+    );
   }
 
-  if (ToolComponent && !canUseTool()) {
+  const currentTier = creditsData?.tier ?? "none";
+  const minTier = feature?.minTier ?? "free";
+  const canUseTool = (() => {
+    if (minTier === "free" || minTier === "none") return true;
+    const userIdx = TIER_ORDER.indexOf(currentTier as (typeof TIER_ORDER)[number]);
+    const reqIdx = TIER_ORDER.indexOf(minTier as (typeof TIER_ORDER)[number]);
+    return userIdx !== -1 && reqIdx !== -1 && userIdx >= reqIdx;
+  })();
+
+  if (feature && !canUseTool) {
     const tierLabel = TIER_DISPLAY[minTier] ?? minTier;
     return (
       <ScreenContainer containerClassName="bg-background">
@@ -153,9 +127,8 @@ export default function ToolScreen() {
           <Text style={styles.lockIcon}>🔒</Text>
           <Text style={[styles.lockedTitle, { color: colors.foreground }]}>Upgrade Required</Text>
           <Text style={[styles.lockedSubtitle, { color: colors.muted }]}>
-            This tool requires the{" "}
-            <Text style={{ fontWeight: "700", color: colors.primary }}>{tierLabel}</Text> plan or
-            higher.
+            {feature.label} requires the{" "}
+            <Text style={{ fontWeight: "700", color: colors.primary }}>{tierLabel}</Text> plan or higher.
           </Text>
           <TouchableOpacity
             style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
@@ -171,45 +144,55 @@ export default function ToolScreen() {
     );
   }
 
-  if (!ToolComponent) {
+  if (NativeTool) {
+    return <NativeTool projectId={parsedProjectId} />;
+  }
+
+  // Critical parity fallback: every feature advertised by the live website
+  // remains usable in mobile even before a dedicated native screen ships.
+  if (feature) {
+    return <WebViewTool label={feature.label} webPath={feature.webPath} projectId={parsedProjectId} />;
+  }
+
+  if (loading) {
     return (
       <ScreenContainer containerClassName="bg-background">
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text>
-          </TouchableOpacity>
-        </View>
         <View style={styles.center}>
-          <Text style={styles.notFoundIcon}>🔧</Text>
-          <Text style={[styles.notFoundTitle, { color: colors.foreground }]}>Tool Not Found</Text>
-          <Text style={[styles.notFoundSubtitle, { color: colors.muted }]}>
-            The tool "{name}" is not available yet.
-          </Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.notFoundSubtitle, { color: colors.muted }]}>Checking Virelle tools…</Text>
         </View>
       </ScreenContainer>
     );
   }
 
-  return <ToolComponent projectId={projectId ? Number(projectId) : undefined} />;
+  return (
+    <ScreenContainer containerClassName="bg-background">
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={[styles.back, { color: colors.primary }]}>‹ Back</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.center}>
+        <Text style={styles.notFoundIcon}>🔧</Text>
+        <Text style={[styles.notFoundTitle, { color: colors.foreground }]}>Tool Not Found</Text>
+        <Text style={[styles.notFoundSubtitle, { color: colors.muted }]}>
+          The tool "{name}" is not currently advertised by Virelle Studios.
+        </Text>
+      </View>
+    </ScreenContainer>
+  );
 }
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingVertical: 14 },
   back: { fontSize: 16 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 32 },
-  // Locked state
   lockIcon: { fontSize: 52 },
   lockedTitle: { fontSize: 22, fontWeight: "800", textAlign: "center" },
   lockedSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 22 },
-  upgradeButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginTop: 4,
-  },
+  upgradeButton: { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24, marginTop: 4 },
   upgradeText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   cancelText: { fontSize: 14, marginTop: 4 },
-  // Not found state
   notFoundIcon: { fontSize: 48 },
   notFoundTitle: { fontSize: 20, fontWeight: "700" },
   notFoundSubtitle: { fontSize: 14, textAlign: "center" },
