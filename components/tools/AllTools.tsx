@@ -15,7 +15,6 @@ import { HollywoodIcon } from "@/components/hollywood-badge";
 import { FEATURE_ID_TO_TOOL_ICON } from "@/constants/hollywoodIcons";
 
 const TIER_COLORS: Record<string, string> = { free: "#6B7280", indie: "#3B82F6", amateur: "#10B981", independent: "#F59E0B", creator: "#F59E0B", studio: "#F59E0B", industry: "#F59E0B" };
-// Three public tiers: Indie, Creator, Industry. creator/studio are aliases for Industry.
 const TIER_LABELS: Record<string, string> = { free: "Free", indie: "Indie", amateur: "Creator", independent: "Industry", creator: "Industry", studio: "Industry", industry: "Industry" };
 const CATEGORIES = ["All", "Writing", "Visual", "AI Video", "Production", "Post-Production", "Management", "Account"];
 
@@ -45,7 +44,7 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
     if (minTier === "free" || minTier === "none") return true;
     const userIdx = TIER_ORDER.indexOf(currentTier as any);
     const reqIdx = TIER_ORDER.indexOf(minTier as any);
-    if (userIdx === -1) return false; // not subscribed
+    if (userIdx === -1) return false;
     return userIdx >= reqIdx;
   }
 
@@ -77,7 +76,7 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
         <Text style={[styles.count, { color: colors.muted }]}>{loading ? "…" : `${filtered.length}`}</Text>
       </View>
       <View style={[styles.searchRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={{ color: colors.muted }}>🔍</Text>
+        <Text style={{ color: colors.muted }}>⌕</Text>
         <TextInput style={[styles.searchInput, { color: colors.foreground }]} placeholder="Search tools…" placeholderTextColor={colors.muted} value={search} onChangeText={setSearch} returnKeyType="search" />
         {search.length > 0 && <TouchableOpacity onPress={() => setSearch("")}><Text style={{ color: colors.muted, fontSize: 16 }}>✕</Text></TouchableOpacity>}
       </View>
@@ -126,13 +125,13 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
         ))}
         {filtered.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 60, gap: 8 }}>
-            <Text style={{ fontSize: 40 }}>🔧</Text>
+            <Text style={{ fontSize: 40 }}>⌕</Text>
             <Text style={[styles.toolLabel, { color: colors.foreground }]}>No tools found</Text>
             <Text style={{ color: colors.muted, fontSize: 13 }}>Try a different search or category.</Text>
           </View>
         )}
         <Text style={[styles.registryNote, { color: colors.muted }]}>
-          {loading ? "Checking for new tools…" : `${registry.features.filter(f => !f.isAdmin).length} tools · synced from virellestudios.com`}
+          {loading ? "Checking for new tools…" : `${registry.features.filter(f => !f.isAdmin).length} tools · synced from virelle.life`}
         </Text>
       </ScrollView>
     </ScreenContainer>
@@ -142,14 +141,14 @@ export default function AllToolsScreen({ projectId }: { projectId?: number }) {
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 0.5 },
   back: { fontSize: 16 }, title: { fontSize: 17, fontWeight: "600" }, count: { fontSize: 14 },
-  searchRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginVertical: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
+  searchRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginVertical: 12, borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 15 },
-  catChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 }, catText: { fontSize: 13, fontWeight: "500" },
+  catChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 }, catText: { fontSize: 13, fontWeight: "600" },
   catTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8 },
-  toolRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 8, gap: 12 },
+  toolRow: { flexDirection: "row", alignItems: "center", padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 9, gap: 12 },
   toolIcon: { fontSize: 28, width: 36, textAlign: "center" },
-  toolLabel: { fontSize: 15, fontWeight: "600" }, toolDesc: { fontSize: 12, lineHeight: 16 },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }, badgeText: { color: "#fff", fontSize: 9, fontWeight: "700" },
+  toolLabel: { fontSize: 15, fontWeight: "700" }, toolDesc: { fontSize: 12, lineHeight: 16 },
+  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 7 }, badgeText: { color: "#fff", fontSize: 9, fontWeight: "700" },
   tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }, tierText: { fontSize: 10, fontWeight: "700" },
-  registryNote: { fontSize: 11, textAlign: "center", paddingVertical: 16 },
+  registryNote: { fontSize: 11, textAlign: "center", paddingVertical: 18 },
 });
