@@ -108,7 +108,7 @@ export default function ToolScreen() {
   const currentTier = creditsData?.tier ?? "none";
   const minTier = feature?.minTier ?? "free";
   const canUseTool = (() => {
-    if (minTier === "free" || minTier === "none") return true;
+    if (minTier === "free") return true;
     const userIdx = TIER_ORDER.indexOf(currentTier as (typeof TIER_ORDER)[number]);
     const reqIdx = TIER_ORDER.indexOf(minTier as (typeof TIER_ORDER)[number]);
     return userIdx !== -1 && reqIdx !== -1 && userIdx >= reqIdx;
