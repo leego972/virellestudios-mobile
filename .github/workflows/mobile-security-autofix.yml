@@ -22,19 +22,48 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Apply pnpm security fixes
+
+      - name: Remove stale vulnerable override pins
         shell: bash
         run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          p.pnpm ||= {};
+          p.pnpm.overrides ||= {};
+          Object.assign(p.pnpm.overrides, {
+            '@xmldom/xmldom': '0.8.15',
+            'brace-expansion@<2': '1.1.18',
+            'brace-expansion@>=2 <3': '2.1.2',
+            'brace-expansion@>=3': '5.0.9',
+            'fast-uri': '3.1.6',
+            'js-yaml@<4': '3.15.2',
+            'js-yaml@>=4': '4.3.2',
+            'postcss': '8.5.23',
+            'qs': '6.16.0',
+            'tar': '7.5.21',
+            'undici@<7': '6.28.0'
+          });
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          NODE
+
+      - name: Apply remaining pnpm security fixes
+        shell: bash
+        run: |
+          pnpm install --no-frozen-lockfile
           pnpm audit --fix || true
           pnpm install --no-frozen-lockfile
+
       - name: Validate repaired dependency graph
         shell: bash
         run: |
           pnpm check
+          pnpm lint
           pnpm test
           pnpm build
           pnpm doctor
-          pnpm audit --audit-level moderate
+          node scripts/security-audit.mjs
+
       - name: Commit dependency repair
         shell: bash
         run: |
@@ -45,5 +74,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json pnpm-lock.yaml
-          git commit -m "fix(mobile): patch audited dependency vulnerabilities"
+          git commit -m "fix(mobile): patch fixable dependency vulnerabilities"
           git push origin HEAD:main
